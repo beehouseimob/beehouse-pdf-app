@@ -61,21 +61,17 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Pega TODOS os dados do formulário
         const data = req.body;
-        
-        // 2. Inicia a criação do PDF
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome}.pdf"`);
         doc.pipe(res);
 
-        // --- 3. Monta o Documento ---
-        
+        // --- 1. Cabeçalho ---
         drawHeader(doc);
         
-        // --- Seção CONTRATANTE ---
+        // --- 2. Seção CONTRATANTE ---
         const contratanteFields = [
             { col1: { label: 'Nome:', value: data.contratanteNome }, col2: { label: 'CPF:', value: data.contratanteCpf }, col3: { label: 'RG nº:', value: data.contratanteRg } },
             { col1: { label: 'Profissão:', value: data.contratanteProfissao }, col2: { label: 'Estado Civil:', value: data.contratanteEstadoCivil }, col3: { label: 'Regime:', value: data.contratanteRegimeCasamento } },
@@ -84,7 +80,7 @@ export default async function handler(req, res) {
         ];
         drawSection(doc, 'CONTRATANTE', contratanteFields);
 
-        // --- Seção IMÓVEL ---
+        // --- 3. Seção IMÓVEL ---
         const imovelFields = [
             { col1: { label: 'Imóvel:', value: data.imovelDescricao } },
             { col1: { label: 'Endereço:', value: data.imovelEndereco } },
@@ -94,51 +90,62 @@ export default async function handler(req, res) {
         ];
         drawSection(doc, 'IMÓVEL', imovelFields);
 
-        // --- Seção CLÁUSULAS ---
+        // --- 4. Seção CLÁUSULAS (A CORREÇÃO ESTÁ AQUI) ---
+        
         doc.font('Helvetica').fontSize(10);
-        doc.text('O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob n° 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:', { align: 'justify' });
+        
+        const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob n° 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
+        doc.text(textoPreambulo, { align: 'justify' });
         doc.moveDown(1);
         
-        doc.font('Helvetica-Bold').text('1º');
-        doc.font('Helvetica').text(`A venda é concebida a contar desta data pelo prazo de ${data.contratoPrazo || '____'} dias.`, { continued: true, align: 'justify' });
-        doc.text(' Após esse período, o contrato permanece por prazo indeterminado ou até manifestação por escrito por quaisquer das partes, pelo menos 15 (quinze) dias anteriores à intenção de cancelamento, observando-se ainda o artigo 726 do Código Civil Vigente.', { align: 'justify' });
+        // Cláusula 1 (Juntamos o texto ANTES de enviar ao PDF)
+        const clausula1 = `1º A venda é concebida a contar desta data pelo prazo de ${data.contratoPrazo || '____'} dias. Após esse período, o contrato permanece por prazo indeterminado ou até manifestação por escrito por quaisquer das partes, pelo menos 15 (quinze) dias anteriores à intenção de cancelamento, observando-se ainda o artigo 726 do Código Civil Vigente.`;
+        doc.text(clausula1, { align: 'justify' });
         doc.moveDown(0.5);
 
-        doc.font('Helvetica-Bold').text('2º');
-        doc.font('Helvetica').text(`O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '____'}% sobre o valor da venda, no ato do recebimento do sinal.`, { continued: true, align: 'justify' });
-        doc.text(' Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro.', { align: 'justify' });
+        // Cláusula 2
+        const clausula2 = `2º O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '____'}% sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro.`;
+        doc.text(clausula2, { align: 'justify' });
         doc.moveDown(0.5);
 
-        doc.font('Helvetica-Bold').text('3º');
-        doc.font('Helvetica').text('A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', { align: 'justify' });
+        // Cláusula 3
+        const clausula3 = '3º A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.';
+        doc.text(clausula3, { align: 'justify' });
         doc.moveDown(0.5);
         
-        doc.font('Helvetica-Bold').text('4º');
-        doc.font('Helvetica').text('O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', { align: 'justify' });
+        // Cláusula 4
+        const clausula4 = '4º O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.';
+        doc.text(clausula4, { align: 'justify' });
         doc.moveDown(0.5);
         
-        doc.font('Helvetica-Bold').text('5º');
-        doc.font('Helvetica').text('Em caso de qualquer controvérsia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', { align: 'justify' });
+        // Cláusula 5
+        const clausula5 = '5º Em caso de qualquer controvérsia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.';
+        doc.text(clausula5, { align: 'justify' });
         doc.moveDown(1);
 
-        doc.text('Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.', { align: 'justify' });
+        // Fechamento
+        const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
+        doc.text(textoFechamento, { align: 'justify' });
         doc.moveDown(2);
 
-        // --- Assinaturas ---
+        // --- 5. Assinaturas (Também corrigido) ---
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         doc.text(`Joinville, ${dataHoje}`, { align: 'center' });
         doc.moveDown(3);
 
+        // Assinatura Contratante
         doc.text('________________________________________', { align: 'center' });
         doc.font('Helvetica-Bold').text(data.contratanteNome.toUpperCase() || 'CONTRATANTE', { align: 'center' });
         doc.font('Helvetica').text(data.contratanteCpf || 'CPF/CNPJ', { align: 'center' });
         
-        doc.moveDown(3);
+        doc.moveDown(3); // Espaço entre assinaturas
+        
+        // Assinatura Contratada
         doc.text('________________________________________', { align: 'center' });
         doc.font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center' });
         doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center' });
         
-        // --- 5. Finaliza o PDF ---
+        // --- 6. Finaliza o PDF ---
         doc.end();
 
     } catch (error) {
