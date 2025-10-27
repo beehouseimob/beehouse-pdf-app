@@ -15,7 +15,7 @@ export default async function handler(req, res) {
         const companyPhone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
         
         // !!! IMPORTANTE !!!
-        // Troque 'UF_CRM_XXXXXX' pelo ID real do seu campo customizado de CNPJ/CPF no Bitrix2422
+        // Troque 'UF_CRM_XXXXXX' pelo ID real do seu campo customizado de CNPJ/CPF no Bitrix24
         const companyCnpj = company.UF_CRM_66C37392C9F3D || ''; 
 
         // 3. Envia o Formulário HTML como resposta
