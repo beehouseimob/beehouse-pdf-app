@@ -1,13 +1,19 @@
 import { saveTokens, call } from '../utils/b24.js';
 
-// Este é o manipulador da serverless function
 export default async function handler(req, res) {
     
-    // O Bitrix24 envia os dados no corpo (body) da requisição
-    const { AUTH_ID, REFRESH_ID, domain } = req.body || req.query; // Aceita GET ou POST
+    // --- MUDANÇA IMPORTANTE AQUI ---
+    // Combina os parâmetros de GET (req.query) e POST (req.body)
+    // A instalação real (clique em Instalar) vem por GET (req.query)
+    // A validação (ao Salvar) vem por POST (req.body vazio)
+    const params = { ...req.query, ...req.body };
+    const { AUTH_ID, REFRESH_ID, domain } = params;
+    // --- FIM DA MUDANÇA ---
 
     if (!AUTH_ID || !domain) {
-        return res.status(400).send("Erro: Parametros de instalacao nao recebidos.");
+        // Se for a validação (POST sem dados), ela vai falhar aqui. 
+        // Isso é normal e esperado.
+        return res.status(400).send("Erro: Parametros de instalacao (AUTH_ID, domain) nao recebidos.");
     }
 
     try {
@@ -20,11 +26,12 @@ export default async function handler(req, res) {
         await saveTokens(tokens);
 
         // 2. Registra o nosso botão (Placement)
+        // O helper 'call' vai usar os tokens que acabámos de salvar
         const handlerUrl = `https://${req.headers.host}/api/handler`;
         
         await call('placement.bind', {
-            PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
-            HANDLER: handlerUrl, // A URL do nosso script de formulário
+            PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR', // O local: Barra de ferramentas da Empresa
+            HANDLER: handlerUrl, // O nosso script do formulário
             TITLE: 'Gerar Autorização PDF',
             DESCRIPTION: 'Gera PDF de autorização de vendas'
         });
@@ -33,7 +40,8 @@ export default async function handler(req, res) {
         res.send('<head><script>top.BX.closeApplication();</script></head><body>Instalado com sucesso!</body>');
 
     } catch (error) {
-        console.error(error); // Loga o erro no console da Vercel
+        // Se a instalação real falhar, veremos o log de erro
+        console.error('ERRO NA INSTALACAO REAL:', error); 
         res.status(500).send('Erro durante a instalacao: ' + error.message);
     }
 }
