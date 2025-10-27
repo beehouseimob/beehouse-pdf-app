@@ -10,13 +10,14 @@ export default async function handler(req, res) {
         const response = await call('crm.company.get', { id: companyId });
         const company = response.result;
         
-        // --- Dados Automáticos ---
-        const companyName = company.TITLE || '';
-        const companyPhone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
+        // --- Dados Automáticos (Pré-preenchidos e EDITÁVEIS) ---
+        // Você pode buscar qualquer campo.
+        // Lembre-se de trocar 'UF_CRM_XXXXXX' pelo ID real do seu campo de CPF/CNPJ
         
-        // !!! IMPORTANTE !!!
-        // Troque 'UF_CRM_XXXXXX' pelo ID real do seu campo customizado de CNPJ/CPF no Bitrix24
-        const companyCnpj = company.UF_CRM_66C37392C9F3D || ''; 
+        const proprietarioNome = company.TITLE || '';
+        const proprietarioTelefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
+        const proprietarioEmail = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
+        const proprietarioCpf = company.UF_CRM_XXXXXX || ''; // <-- TROQUE PELO ID DO SEU CAMPO DE CPF/CNPJ
 
         // 3. Envia o Formulário HTML como resposta
         res.setHeader('Content-Type', 'text/html');
@@ -29,60 +30,118 @@ export default async function handler(req, res) {
                 <style>
                     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; }
                     h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-                    form { max-width: 700px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-                    div { margin-bottom: 16px; }
-                    label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; }
-                    input[type="text"], input[type="number"], textarea {
-                        width: 98%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;
+                    form { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+                    .form-section { margin-bottom: 25px; }
+                    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+                    .grid-col-span-2 { grid-column: span 2; }
+                    .grid-col-span-3 { grid-column: span 3; }
+                    div { margin-bottom: 12px; }
+                    label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
+                    input[type="text"], input[type="number"], input[type="email"], select {
+                        width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;
                     }
-                    input[readonly] { background-color: #eee; cursor: not-allowed; }
                     button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
                     button:hover { background-color: #0056b3; }
-                    hr { border: none; border-top: 1px solid #eee; margin: 25px 0; }
                 </style>
             </head>
             <body>
                 <h2>Gerar Autorização de Venda</h2>
-                <p>Preencha os dados manuais para gerar o documento.</p>
+                <p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p>
 
                 <form action="/api/generate-pdf" method="POST" target="_blank">
                     
-                    <h3>Dados do Proprietário (Automático)</h3>
-                    <div>
-                        <label>Nome / Razão Social:</label>
-                        <input type="text" name="proprietarioNome" value="${companyName}" readonly>
-                    </div>
-                    <div>
-                        <label>CPF / CNPJ:</label>
-                        <input type="text" name="proprietarioDoc" value="${companyCnpj}" readonly>
-                    </div>
-                    <div>
-                        <label>Telefone:</label>
-                        <input type="text" name="proprietarioTelefone" value="${companyPhone}" readonly>
+                    <div class="form-section">
+                        <h3>CONTRATANTE</h3>
+                        <div class="form-grid">
+                            <div>
+                                <label>Nome:</label>
+                                <input type="text" name="contratanteNome" value="${proprietarioNome}">
+                            </div>
+                            <div>
+                                <label>CPF:</label>
+                                <input type="text" name="contratanteCpf" value="${proprietarioCpf}">
+                            </div>
+                            <div>
+                                <label>RG nº:</label>
+                                <input type="text" name="contratanteRg" placeholder="Ex: 9.999.999">
+                            </div>
+                            <div>
+                                <label>Profissão:</label>
+                                <input type="text" name="contratanteProfissao">
+                            </div>
+                            <div>
+                                <label>Estado Civil:</label>
+                                <input type="text" name="contratanteEstadoCivil">
+                            </div>
+                            <div>
+                                <label>Regime de Casamento:</label>
+                                <input type="text" name="contratanteRegimeCasamento" placeholder="Se aplicável">
+                            </div>
+                            <div class="grid-col-span-3">
+                                <label>Endereço Residencial:</label>
+                                <input type="text" name="contratanteEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
+                            </div>
+                            <div>
+                                <label>Telefone/Celular:</label>
+                                <input type="text" name="contratanteTelefone" value="${proprietarioTelefone}">
+                            </div>
+                            <div class="grid-col-span-2">
+                                <label>E-mail:</label>
+                                <input type="email" name="contratanteEmail" value="${proprietarioEmail}">
+                            </div>
+                        </div>
                     </div>
 
-                    <hr>
+                    <div class="form-section">
+                        <h3>IMÓVEL</h3>
+                        <div class="form-grid">
+                             <div class="grid-col-span-3">
+                                <label>Imóvel (Descrição):</label>
+                                <input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol">
+                            </div>
+                            <div class="grid-col-span-3">
+                                <label>Endereço do Imóvel:</label>
+                                <input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
+                            </div>
+                            <div class="grid-col-span-2">
+                                <label>Inscrição Imobiliária/Matrícula:</label>
+                                <input type="text" name="imovelMatricula" placeholder="Nº da matrícula no Registro de Imóveis">
+                            </div>
+                             <div>
+                                <label>Valor do Imóvel (R$):</label>
+                                <input type="number" name="imovelValor" step="0.01" placeholder="500000.00">
+                            </div>
+                            <div class="grid-col-span-2">
+                                <label>Administradora de Condomínio:</label>
+                                <input type="text" name="imovelAdminCondominio" placeholder="Se aplicável">
+                            </div>
+                            <div>
+                                <label>Valor Condomínio (R$):</label>
+                                <input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00">
+                            </div>
+                            <div>
+                                <label>Chamada de Capital:</label>
+                                <input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00 (se houver)">
+                            </div>
+                             <div class="grid-col-span-2">
+                                <label>Nº de parcelas (Chamada Capital):</label>
+                                <input type="number" name="imovelNumParcelas" placeholder="Se aplicável">
+                            </div>
+                        </div>
+                    </div>
 
-                    <h3>Dados do Imóvel & Contrato (Manual)</h3>
-                    <div>
-                        <label for="imovelEndereco">Endereço Completo do Imóvel:</label>
-                        <input type="text" id="imovelEndereco" name="imovelEndereco" placeholder="Ex: Rua, 123, Bairro, Cidade - SC" required>
-                    </div>
-                    <div>
-                        <label for="imovelMatricula">Matrícula do Imóvel:</label>
-                        <input type="text" id="imovelMatricula" name="imovelMatricula" placeholder="Nº da matrícula no Registro de Imóveis">
-                    </div>
-                    <div>
-                        <label for="valorVenda">Valor de Venda (R$):</label>
-                        <input type="number" id="valorVenda" name="valorVenda" step="0.01" required>
-                    </div>
-                    <div>
-                        <label for="comissaoPct">Comissão (%):</label>
-                        <input type="number" id="comissaoPct" name="comissaoPct" step="0.1" value="6" required>
-                    </div>
-                    <div>
-                        <label for="prazoDias">Prazo de Validade (dias):</label>
-                        <input type="number" id="prazoDias" name="prazoDias" value="90" required>
+                    <div class="form-section">
+                        <h3>CONTRATO</h3>
+                        <div class="form-grid">
+                            <div>
+                                <label>Prazo de exclusividade (dias):</label>
+                                <input type="number" name="contratoPrazo" value="90" required>
+                            </div>
+                             <div>
+                                <label>Comissão (%):</label>
+                                <input type="number" name="contratoComissaoPct" value="6" step="0.1" required>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit">Gerar PDF</button>
