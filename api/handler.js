@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         
         // !!! IMPORTANTE !!!
         // Troque 'UF_CRM_XXXXXX' pelo ID real do seu campo customizado de CNPJ/CPF no Bitrix24
-        const companyCnpj = company.UF_CRM_XXXXXX || ''; 
+        const companyCnpj = company.UF_CRM_66C37392C9F3D || ''; 
 
         // 3. Envia o Formulário HTML como resposta
         res.setHeader('Content-Type', 'text/html');
