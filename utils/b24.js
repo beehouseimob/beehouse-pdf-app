@@ -37,7 +37,17 @@ export async function call(method, params = {}) {
 
     } catch (error) {
         // 2. Verifica se o token expirou
-        if (error.response && error.response.data && error.response.data.error === 'EXPIRED_TOKEN') {
+        
+        // --- A CORREÇÃO ESTÁ AQUI ---
+        // Vamos verificar a mensagem de erro em minúsculas
+        const errorType = (error.response && error.response.data && error.response.data.error)
+            ? error.response.data.error.toLowerCase()
+            : '';
+        
+        if (errorType === 'expired_token') {
+        // --- FIM DA CORREÇÃO ---
+
+            console.log('Token expirado. Tentando renovar...');
             
             // 3. Se expirou, pede um novo token
             const refreshUrl = `https://oauth.bitrix.info/oauth/token/`;
@@ -58,6 +68,7 @@ export async function call(method, params = {}) {
 
             // 4. Salva os NOVOS tokens no Vercel KV
             await saveTokens(newTokens);
+            console.log('Token renovado e salvo com sucesso.');
             
             // 5. Tenta a chamada da API novamente com o NOVO token
             const retryResponse = await axios.post(url, { ...params, auth: newTokens.access_token });
