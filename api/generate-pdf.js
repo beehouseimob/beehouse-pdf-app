@@ -6,7 +6,7 @@ function formatCurrency(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// Função helper para desenhar o cabeçalho (Esta função é simples e funciona)
+// Função helper para desenhar o cabeçalho
 function drawHeader(doc) {
     doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center' });
     doc.moveDown(0.5);
@@ -14,8 +14,23 @@ function drawHeader(doc) {
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', { align: 'center' });
     doc.moveDown(1.5);
     doc.fontSize(14).font('Helvetica-Bold').text('AUTORIZAÇÃO DE VENDA', { align: 'center' });
-    doc.moveDown(1);
+    doc.moveDown(1.5); // Mais espaço
 }
+
+// Função helper para desenhar um par de Label + Valor
+function drawField(doc, label, value, x, y, options = {}) {
+    const labelWidth = options.labelWidth || 60;
+    const valueWidth = options.valueWidth || 150;
+    
+    doc.font('Helvetica-Bold').text(label, x, y, { width: labelWidth, lineBreak: false });
+    doc.font('Helvetica').text(value || '__________', x + labelWidth, y, { width: valueWidth });
+    
+    // Retorna a altura do campo para sabermos quanto pular
+    const labelHeight = doc.heightOfString(label, { width: labelWidth });
+    const valueHeight = doc.heightOfString(value || '__________', { width: valueWidth });
+    return Math.max(labelHeight, valueHeight);
+}
+
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -27,98 +42,82 @@ export default async function handler(req, res) {
         const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
         // --- MUDANÇA CRÍTICA: GERAR EM MEMÓRIA ---
-        // Não vamos mais usar doc.pipe(res).
-        // Vamos capturar os dados do PDF em um array de "buffers".
+        // (Isso já está funcionando, vamos manter)
         const buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => {
-            // Quando o PDF terminar de ser gerado, juntamos os pedaços
             const pdfData = Buffer.concat(buffers);
-
-            // E SÓ ENTÃO enviamos o arquivo completo de uma vez.
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome}.pdf"`);
             res.send(pdfData);
         });
-        // --- FIM DA MUDANÇA ---
-
 
         // --- 1. Cabeçalho ---
         drawHeader(doc);
         
-        // --- 2. Seção CONTRATANTE (Layout Manual Robusto) ---
+        // --- 2. Seção CONTRATANTE (Layout Manual v3 - Mais Robusto) ---
         doc.fontSize(11).font('Helvetica-Bold').text('CONTRATANTE', { underline: true });
         doc.moveDown(0.7);
         doc.fontSize(10);
         
-        const col1 = doc.page.margins.left; // 50
-        const col2 = 250;
-        const col3 = 410;
+        const col1 = 50; // Margem Esquerda
+        const col2 = 270;
+        const col3 = 440;
         let y = doc.y;
+        let rowHeight = 0;
 
-        // Row 1
-        doc.font('Helvetica-Bold').text('Nome:', col1, y);
-        doc.font('Helvetica').text(data.contratanteNome || '__________', col1 + 40, y, { width: 180 });
-        doc.font('Helvetica-Bold').text('CPF:', col2, y);
-        doc.font('Helvetica').text(data.contratanteCpf || '__________', col2 + 30, y, { width: 140 });
-        doc.font('Helvetica-Bold').text('RG nº:', col3, y);
-        doc.font('Helvetica').text(data.contratanteRg || '__________', col3 + 40, y, { width: 120 });
-        y += 18; // Move para a próxima linha
+        // --- Linha 1 ---
+        drawField(doc, 'Nome:', data.contratanteNome, col1, y, { labelWidth: 40, valueWidth: 200 });
+        drawField(doc, 'CPF:', data.contratanteCpf, col2, y, { labelWidth: 30, valueWidth: 150 });
+        drawField(doc, 'RG nº:', data.contratanteRg, col3, y, { labelWidth: 40, valueWidth: 100 });
+        y += 18; // Pula para a próxima linha
 
-        // Row 2
-        doc.font('Helvetica-Bold').text('Profissão:', col1, y);
-        doc.font('Helvetica').text(data.contratanteProfissao || '__________', col1 + 55, y, { width: 175 });
-        doc.font('Helvetica-Bold').text('Estado Civil:', col2, y);
-        doc.font('Helvetica').text(data.contratanteEstadoCivil || '__________', col2 + 65, y, { width: 115 });
-        doc.font('Helvetica-Bold').text('Regime:', col3, y);
-        doc.font('Helvetica').text(data.contratanteRegimeCasamento || '__________', col3 + 45, y, { width: 120 });
+        // --- Linha 2 ---
+        drawField(doc, 'Profissão:', data.contratanteProfissao, col1, y, { labelWidth: 55, valueWidth: 185 });
+        drawField(doc, 'Estado Civil:', data.contratanteEstadoCivil, col2, y, { labelWidth: 65, valueWidth: 115 });
+        drawField(doc, 'Regime:', data.contratanteRegimeCasamento, col3, y, { labelWidth: 45, valueWidth: 95 });
         y += 18;
 
-        // Row 3 (Address)
+        // --- Linha 3 (Endereço) ---
         doc.font('Helvetica-Bold').text('Endereço:', col1, y);
         doc.font('Helvetica').text(data.contratanteEndereco || '__________', col1 + 55, y, { width: 470 });
-        y = doc.y + 3; // Pega o Y real após o texto (caso ele quebre a linha)
+        y = doc.y + 5; // Pega o Y real após o texto (caso ele quebre a linha) + padding
         
-        // Row 4
-        doc.font('Helvetica-Bold').text('Telefone:', col1, y);
-        doc.font('Helvetica').text(data.contratanteTelefone || '__________', col1 + 50, y, { width: 180 });
-        doc.font('Helvetica-Bold').text('E-mail:', col2, y);
-        doc.font('Helvetica').text(data.contratanteEmail || '__________', col2 + 40, y, { width: 280 });
-        y = doc.y + 15;
+        // --- Linha 4 ---
+        drawField(doc, 'Telefone:', data.contratanteTelefone, col1, y, { labelWidth: 50, valueWidth: 190 });
+        drawField(doc, 'E-mail:', data.contratanteEmail, col2, y, { labelWidth: 40, valueWidth: 270 });
+        y = doc.y + 15; // Pula linha
 
         doc.y = y; // Seta a posição Y final
         doc.moveDown(1.5); // Espaço extra
 
-        // --- 3. Seção IMÓVEL (Layout Manual Robusto) ---
+        // --- 3. Seção IMÓVEL (Layout Manual v3) ---
         doc.fontSize(11).font('Helvetica-Bold').text('IMÓVEL', { underline: true });
         doc.moveDown(0.7);
         y = doc.y;
 
         doc.font('Helvetica-Bold').text('Imóvel:', col1, y);
         doc.font('Helvetica').text(data.imovelDescricao || '__________', col1 + 45, y, { width: 480 });
-        y = doc.y + 3;
+        y = doc.y + 5;
 
         doc.font('Helvetica-Bold').text('Endereço:', col1, y);
         doc.font('Helvetica').text(data.imovelEndereco || '__________', col1 + 55, y, { width: 470 });
-        y = doc.y + 3;
+        y = doc.y + 5;
         
-        doc.font('Helvetica-Bold').text('Matrícula:', col1, y);
-        doc.font('Helvetica').text(data.imovelMatricula || '__________', col1 + 55, y, { width: 175 });
-        doc.font('Helvetica-Bold').text('Valor:', col2, y);
-        doc.font('Helvetica').text(formatCurrency(data.imovelValor), col2 + 35, y, { width: 280 });
-        y = doc.y + 15;
+        // --- Linha Imóvel 3 ---
+        rowHeight = drawField(doc, 'Matrícula:', data.imovelMatricula, col1, y, { labelWidth: 55, valueWidth: 185 });
+        drawField(doc, 'Valor:', formatCurrency(data.imovelValor), col2, y, { labelWidth: 35, valueWidth: 250 });
+        y += rowHeight + 5;
 
-        doc.font('Helvetica-Bold').text('Adm. Condomínio:', col1, y);
-        doc.font('Helvetica').text(data.imovelAdminCondominio || '__________', col1 + 95, y, { width: 135 });
-        doc.font('Helvetica-Bold').text('Condomínio:', col2, y);
-        doc.font('Helvetica').text(formatCurrency(data.imovelValorCondominio), col2 + 65, y, { width: 250 });
-        y = doc.y + 15;
+        // --- Linha Imóvel 4 ---
+        rowHeight = drawField(doc, 'Adm. Condomínio:', data.imovelAdminCondominio, col1, y, { labelWidth: 95, valueWidth: 145 });
+        drawField(doc, 'Condomínio:', formatCurrency(data.imovelValorCondominio), col2, y, { labelWidth: 65, valueWidth: 220 });
+        y += rowHeight + 5;
 
-        doc.font('Helvetica-Bold').text('Chamada Capital:', col1, y);
-        doc.font('Helvetica').text(data.imovelChamadaCapital || '__________', col1 + 95, y, { width: 135 });
-        doc.font('Helvetica-Bold').text('Nº Parcelas:', col2, y);
-        doc.font('Helvetica').text(data.imovelNumParcelas || '__________', col2 + 65, y, { width: 250 });
-        y = doc.y + 15;
+        // --- Linha Imóvel 5 ---
+        rowHeight = drawField(doc, 'Chamada Capital:', data.imovelChamadaCapital, col1, y, { labelWidth: 95, valueWidth: 145 });
+        drawField(doc, 'Nº Parcelas:', data.imovelNumParcelas, col2, y, { labelWidth: 65, valueWidth: 220 });
+        y += rowHeight + 15;
 
         doc.y = y;
         doc.moveDown(1.5);
@@ -169,7 +168,6 @@ export default async function handler(req, res) {
         doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center' });
         
         // --- 6. Finaliza o PDF ---
-        // Isso vai disparar o evento 'end' que definimos lá em cima
         doc.end();
 
     } catch (error) {
