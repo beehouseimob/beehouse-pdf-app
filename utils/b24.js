@@ -28,15 +28,27 @@ export async function call(method, params = {}) {
     }
 
     const { access_token, refresh_token, domain } = tokens;
+    const url = `https://${domain}/rest/${method}`; // URL correta (sem .json)
 
-    // --- A CORREÇÃO ESTÁ AQUI ---
-    // Removemos o ".json" do final da URL.
-    const url = `https://${domain}/rest/${method}`;
-    // --- FIM DA CORREÇÃO ---
+    // --- NOVA LÓGICA INTELIGENTE ---
+    // Se o método da API incluir ".get", usamos HTTP GET.
+    // Caso contrário (como .add, .update, .bind), usamos HTTP POST.
+    const isGetMethod = method.toLowerCase().includes('.get');
+    
+    // Para GET, os parâmetros (incluindo auth) vão na query string ('params')
+    // Para POST, os parâmetros (incluindo auth) vão no body (segundo argumento)
+    const makeRequest = async (token) => {
+        if (isGetMethod) {
+            return axios.get(url, { params: { ...params, auth: token } });
+        } else {
+            return axios.post(url, { ...params, auth: token });
+        }
+    };
+    // --- FIM DA NOVA LÓGICA ---
 
     try {
         // 1. Tenta a chamada com o access_token atual
-        const response = await axios.post(url, { ...params, auth: access_token });
+        const response = await makeRequest(access_token);
         return response.data;
 
     } catch (error) {
@@ -70,7 +82,8 @@ export async function call(method, params = {}) {
             console.log('Token renovado e salvo com sucesso.');
             
             // 5. Tenta a chamada da API novamente com o NOVO token
-            const retryResponse = await axios.post(url, { ...params, auth: newTokens.access_token });
+            // (Usando a mesma lógica GET/POST)
+            const retryResponse = await makeRequest(newTokens.access_token);
             return retryResponse.data;
 
         } else {
