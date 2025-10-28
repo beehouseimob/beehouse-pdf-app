@@ -78,49 +78,49 @@ async function generatePdfPromise(data) {
             // --- Linha 1: Nome (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke(); // Caixa da linha
             doc.font('Helvetica-Bold').text('Nome:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteNome || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteNome || '', valueXOffset, y + textYPad);
             y += rowHeight;
 
             // --- Linha 2: CPF / RG ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('CPF:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteCpf || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteCpf || '', valueXOffset, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('RG nº:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteRg || '__________', col2_x + 50, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteRg || '', col2_x + 50, y + textYPad);
             y += rowHeight;
 
             // --- Linha 3: Profissão (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke();
             doc.font('Helvetica-Bold').text('Profissão:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteProfissao || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteProfissao || '', valueXOffset, y + textYPad);
             y += rowHeight;
 
             // --- Linha 4: Estado Civil / Regime ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Estado Civil:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteEstadoCivil || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteEstadoCivil || '', valueXOffset, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('Regime de Casamento:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteRegimeCasamento || '__________', col2_x + 125, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteRegimeCasamento || '', col2_x + 125, y + textYPad);
             y += rowHeight;
 
             // --- Linha 5: Endereço (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke();
-            doc.font('Helvetica-Bold').text('Endereço Residencial:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteEndereco || '__________', valueXOffset + 25, y + textYPad, { width: CONTENT_WIDTH - (valueXOffset + 25) - MARGIN });
+            doc.font('Helvetica-Bold').text('Endereço Residencial:', labelX + 25, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteEndereco || '', valueXOffset + 25, y + textYPad, { width: CONTENT_WIDTH - (valueXOffset + 25) - MARGIN });
             y += rowHeight;
 
             // --- Linha 6: Telefone / E-mail ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Telefone/Celular:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteTelefone || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteTelefone || '', valueXOffset, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('E-mail:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteEmail || '__________', col2_x + 50, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteEmail || '', col2_x + 50, y + textYPad);
             y += rowHeight + 15; // + Espaço extra
 
 
@@ -132,11 +132,11 @@ async function generatePdfPromise(data) {
             // --- Linha Imóvel 1: Imóvel / Endereço ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Imóvel:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.imovelDescricao || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.imovelDescricao || '', valueXOffset, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('Endereço:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelEndereco || '__________', col2_x + 60, y + textYPad);
+            doc.font('Helvetica').text(data.imovelEndereco || '', col2_x + 60, y + textYPad);
             y += rowHeight;
 
             // --- Linha Imóvel 2: Matrícula / Valor / Adm ---
@@ -145,29 +145,29 @@ async function generatePdfPromise(data) {
             
             doc.rect(col1_x, y, cellWidth3Col, rowHeight).stroke(); // Matrícula
             doc.font('Helvetica-Bold').text('Matrícula:', col1_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelMatricula || '__________', col1_x + 60, y + textYPad);
+            doc.font('Helvetica').text(data.imovelMatricula || '', col1_x + 60, y + textYPad);
 
             doc.rect(col1_x + cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Valor
             doc.font('Helvetica-Bold').text('Valor:', col1_x + cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(formatCurrency(data.imovelValor) || '__________', col1_x + cellWidth3Col + 45, y + textYPad);
+            doc.font('Helvetica').text(formatCurrency(data.imovelValor) || '', col1_x + cellWidth3Col + 45, y + textYPad);
             
             doc.rect(col1_x + 2 * cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Adm. Condomínio
             doc.font('Helvetica-Bold').text('Adm. Condomínio:', col1_x + 2 * cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelAdminCondominio || '__________', col1_x + 2 * cellWidth3Col + 105, y + textYPad);
+            doc.font('Helvetica').text(data.imovelAdminCondominio || '', col1_x + 2 * cellWidth3Col + 105, y + textYPad);
             y += rowHeight;
 
             // --- Linha Imóvel 3: Condomínio / Chamada / Parcelas ---
             doc.rect(col1_x, y, cellWidth3Col, rowHeight).stroke(); // Condomínio
             doc.font('Helvetica-Bold').text('Condomínio:', col1_x + 5, y + textYPad);
-            doc.font('Helvetica').text(formatCurrency(data.imovelValorCondominio) || '__________', col1_x + 70, y + textYPad);
+            doc.font('Helvetica').text(formatCurrency(data.imovelValorCondominio) || '', col1_x + 70, y + textYPad);
 
             doc.rect(col1_x + cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Chamada Capital
             doc.font('Helvetica-Bold').text('Chamada Capital:', col1_x + cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelChamadaCapital || '__________', col1_x + cellWidth3Col + 100, y + textYPad);
+            doc.font('Helvetica').text(data.imovelChamadaCapital || '', col1_x + cellWidth3Col + 100, y + textYPad);
             
             doc.rect(col1_x + 2 * cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Nº Parcelas
             doc.font('Helvetica-Bold').text('Nº Parcelas:', col1_x + 2 * cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelNumParcelas || '__________', col1_x + 2 * cellWidth3Col + 75, y + textYPad);
+            doc.font('Helvetica').text(data.imovelNumParcelas || '', col1_x + 2 * cellWidth3Col + 75, y + textYPad);
             y += rowHeight + 15; // + Espaço extra
 
 
@@ -179,11 +179,11 @@ async function generatePdfPromise(data) {
             // --- Linha Contrato: Prazo / Comissão ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Prazo (dias):', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratoPrazo || '__________', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratoPrazo || '', valueXOffset, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('Comissão (%):', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.contratoComissaoPct || '__________', col2_x + 80, y + textYPad);
+            doc.font('Helvetica').text(data.contratoComissaoPct || '', col2_x + 80, y + textYPad);
             y += rowHeight + 15; // + Espaço extra
 
 
