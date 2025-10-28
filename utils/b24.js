@@ -1,7 +1,5 @@
 import { kv } from '@vercel/kv';
 import axios from 'axios';
-// Precisamos disto para formatar os dados corretamente
-import { URLSearchParams } from 'url';
 
 // Pega as chaves do ambiente da Vercel
 const CLIENT_ID = process.env.B24_CLIENT_ID;
@@ -32,28 +30,12 @@ export async function call(method, params = {}) {
     const { access_token, refresh_token, domain } = tokens;
     const url = `https://${domain}/rest/${method}`; // URL correta (sem .json)
 
-    // --- A SOLUÇÃO DEFINITIVA À PROVA DE FALHAS ---
-    // O Bitrix24 espera dados no formato 'application/x-www-form-urlencoded'.
-    // Vamos usar POST para TUDO e formatar o corpo da requisição
-    // usando URLSearchParams. Isso força o axios a usar o Content-Type correto.
-    
+    // --- LÓGICA CORRIGIDA: USAR POST PARA TUDO ---
     const makeRequest = async (token) => {
-        // 1. Cria um corpo de requisição no formato formulário
-        const bodyParams = new URLSearchParams();
-        
-        // 2. Adiciona todos os parâmetros (ex: id: '123')
-        for (const key in params) {
-            bodyParams.append(key, params[key]);
-        }
-        
-        // 3. Adiciona o token de autenticação ao corpo
-        bodyParams.append('auth', token);
-        
-        // 4. Faz a chamada POST. O axios vai ver 'bodyParams'
-        //    e automaticamente usar o Content-Type correto.
-        return axios.post(url, bodyParams);
+        // O Bitrix24 espera POST para todos os métodos de API OAuth
+        return axios.post(url, { ...params, auth: token });
     };
-    // --- FIM DA SOLUÇÃO ---
+    // --- FIM DA CORREÇÃO ---
 
     try {
         // 1. Tenta a chamada com o access_token atual
@@ -61,7 +43,7 @@ export async function call(method, params = {}) {
         return response.data;
 
     } catch (error) {
-        // 2. Verifica se o token expirou (lógica de 'expired_token' já está correta)
+        // 2. Verifica se o token expirou (com a correção do minúsculo)
         const errorType = (error.response && error.response.data && error.response.data.error)
             ? error.response.data.error.toLowerCase()
             : '';
