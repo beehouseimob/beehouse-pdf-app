@@ -1,5 +1,12 @@
 import PDFDocument from 'pdfkit';
 
+// --- CONSTANTES DE LAYOUT ---
+const MARGIN = 50;
+const PAGE_WIDTH = 612; // A4 em pontos (8.27in * 72pt/in)
+const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // Largura útil
+
+// --- HELPERS ---
+
 // Função helper para formatar R$
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
@@ -8,29 +15,108 @@ function formatCurrency(value) {
 
 // Função helper para desenhar o cabeçalho
 function drawHeader(doc) {
-    doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center' });
+    doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN, { align: 'center' });
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica').text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', { align: 'center' });
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', { align: 'center' });
     doc.moveDown(1.5);
     doc.fontSize(14).font('Helvetica-Bold').text('AUTORIZAÇÃO DE VENDA', { align: 'center' });
-    doc.moveDown(1.5); // Mais espaço
+    doc.moveDown(2); // Mais espaço
 }
 
-// Função helper para desenhar um par de Label + Valor
-function drawField(doc, label, value, x, y, options = {}) {
-    const labelWidth = options.labelWidth || 60;
-    const valueWidth = options.valueWidth || 150;
-    
-    doc.font('Helvetica-Bold').text(label, x, y, { width: labelWidth, lineBreak: false });
-    doc.font('Helvetica').text(value || '__________', x + labelWidth, y, { width: valueWidth });
-    
-    // Retorna a altura do campo para sabermos quanto pular
-    const labelHeight = doc.heightOfString(label, { width: labelWidth });
-    const valueHeight = doc.heightOfString(value || '__________', { width: valueWidth });
-    return Math.max(labelHeight, valueHeight);
+// Função helper para desenhar um Título de Seção
+function drawSectionTitle(doc, title) {
+    doc.fontSize(11).font('Helvetica-Bold').text(title, { underline: true });
+    doc.moveDown(0.7);
+    doc.fontSize(10); // Reseta o tamanho para os campos
 }
 
+/**
+ * [NOVO HELPER] Desenha uma linha com múltiplos campos (colunas).
+ * Calcula a altura máxima entre todos os campos da linha antes de desenhar,
+ * para garantir o alinhamento correto.
+ * * @param {PDFDocument} doc O documento PDF
+ * @param {Array} fields Array de objetos de campo. Ex: [{ label, value, labelWidth, colWidth }, ...]
+ */
+function drawRow(doc, fields) {
+    const startY = doc.y;
+    let currentX = doc.x;
+    let maxHeight = 0;
+
+    // 1. Calcular a altura máxima da linha
+    for (const field of fields) {
+        const { label, value, labelWidth = 60, colWidth = 150 } = field;
+        const val = value || '__________';
+        const valueWidth = colWidth - labelWidth;
+
+        const labelH = doc.font('Helvetica-Bold').heightOfString(label, { width: labelWidth });
+        const valueH = doc.font('Helvetica').heightOfString(val, { width: valueWidth });
+        maxHeight = Math.max(maxHeight, labelH, valueH);
+    }
+
+    // 2. Desenhar todos os campos alinhados por 'startY'
+    for (const field of fields) {
+        const { label, value, labelWidth = 60, colWidth = 150 } = field;
+        const val = value || '__________';
+        const valueWidth = colWidth - labelWidth;
+        
+        // Desenha o Label (Negrito)
+        doc.font('Helvetica-Bold').text(label, currentX, startY, { 
+            width: labelWidth, 
+            lineBreak: false // Não quebra a linha entre label e valor
+        });
+        
+        // Desenha o Valor (Regular)
+        doc.font('Helvetica').text(val, currentX + labelWidth, startY, { 
+            width: valueWidth 
+        });
+
+        // Move o X para a próxima coluna
+        currentX += colWidth;
+    }
+
+    // 3. Mover o cursor Y para baixo da linha mais alta, com padding
+    doc.y = startY + maxHeight + 8; // +8 de padding
+}
+
+/**
+ * [NOVO HELPER] Desenha um único campo que ocupa a largura total (ou quase total).
+ * Ideal para campos longos como "Endereço".
+ * * @param {PDFDocument} doc O documento PDF
+ * @param {string} label O label do campo
+ * @param {string} value O valor do campo
+ * @param {object} options Opções { labelWidth }
+ */
+function drawField(doc, label, value, options = {}) {
+    const { labelWidth = 60 } = options;
+    const startY = doc.y;
+    const startX = doc.x;
+    const val = value || '__________';
+    
+    // Calcula a largura do valor
+    const valueWidth = CONTENT_WIDTH - labelWidth;
+
+    // Desenha Label
+    doc.font('Helvetica-Bold').text(label, startX, startY, { 
+        width: labelWidth, 
+        lineBreak: false 
+    });
+    
+    // Desenha Valor
+    doc.font('Helvetica').text(val, startX + labelWidth, startY, { 
+        width: valueWidth 
+    });
+
+    // Calcula a altura real
+    const labelH = doc.heightOfString(label, { width: labelWidth });
+    const valueH = doc.heightOfString(val, { width: valueWidth });
+    
+    // Move o cursor Y para baixo do item mais alto
+    doc.y = startY + Math.max(labelH, valueH) + 8; // +8 de padding
+}
+
+
+// --- HANDLER PRINCIPAL ---
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -39,133 +125,134 @@ export default async function handler(req, res) {
 
     try {
         const data = req.body;
-        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const doc = new PDFDocument({ margin: MARGIN, size: 'A4' });
 
-        // --- MUDANÇA CRÍTICA: GERAR EM MEMÓRIA ---
-        // (Isso já está funcionando, vamos manter)
         const buffers = [];
         doc.on('data', buffers.push.bind(buffers));
         doc.on('end', () => {
             const pdfData = Buffer.concat(buffers);
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome}.pdf"`);
+            res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome || 'Contratante'}.pdf"`);
             res.send(pdfData);
         });
 
         // --- 1. Cabeçalho ---
         drawHeader(doc);
         
-        // --- 2. Seção CONTRATANTE (Layout Manual v3 - Mais Robusto) ---
-        doc.fontSize(11).font('Helvetica-Bold').text('CONTRATANTE', { underline: true });
-        doc.moveDown(0.7);
-        doc.fontSize(10);
+        // Seta o X inicial para o conteúdo fluir
+        doc.x = MARGIN; 
+
+        // --- 2. Seção CONTRATANTE (Layout Fluido) ---
+        drawSectionTitle(doc, 'CONTRATANTE');
         
-        const col1 = 50; // Margem Esquerda
-        const col2 = 270;
-        const col3 = 440;
-        let y = doc.y;
-        let rowHeight = 0;
+        // Define as larguras das colunas (Total = CONTENT_WIDTH)
+        const col3_1 = (CONTENT_WIDTH * 0.45); // 45%
+        const col3_2 = (CONTENT_WIDTH * 0.30); // 30%
+        const col3_3 = (CONTENT_WIDTH * 0.25); // 25%
+        
+        const col2_1 = (CONTENT_WIDTH * 0.4);  // 40%
+        const col2_2 = (CONTENT_WIDTH * 0.6);  // 60%
 
         // --- Linha 1 ---
-        drawField(doc, 'Nome:', data.contratanteNome, col1, y, { labelWidth: 40, valueWidth: 200 });
-        drawField(doc, 'CPF:', data.contratanteCpf, col2, y, { labelWidth: 30, valueWidth: 150 });
-        drawField(doc, 'RG nº:', data.contratanteRg, col3, y, { labelWidth: 40, valueWidth: 100 });
-        y += 18; // Pula para a próxima linha
+        drawRow(doc, [
+            { label: 'Nome:', value: data.contratanteNome, labelWidth: 40, colWidth: col3_1 },
+            { label: 'CPF:', value: data.contratanteCpf, labelWidth: 30, colWidth: col3_2 },
+            { label: 'RG nº:', value: data.contratanteRg, labelWidth: 40, colWidth: col3_3 }
+        ]);
 
         // --- Linha 2 ---
-        drawField(doc, 'Profissão:', data.contratanteProfissao, col1, y, { labelWidth: 55, valueWidth: 185 });
-        drawField(doc, 'Estado Civil:', data.contratanteEstadoCivil, col2, y, { labelWidth: 65, valueWidth: 115 });
-        drawField(doc, 'Regime:', data.contratanteRegimeCasamento, col3, y, { labelWidth: 45, valueWidth: 95 });
-        y += 18;
+        drawRow(doc, [
+            { label: 'Profissão:', value: data.contratanteProfissao, labelWidth: 55, colWidth: col3_1 },
+            { label: 'Estado Civil:', value: data.contratanteEstadoCivil, labelWidth: 65, colWidth: col3_2 },
+            { label: 'Regime:', value: data.contratanteRegimeCasamento, labelWidth: 45, colWidth: col3_3 }
+        ]);
 
-        // --- Linha 3 (Endereço) ---
-        doc.font('Helvetica-Bold').text('Endereço:', col1, y);
-        doc.font('Helvetica').text(data.contratanteEndereco || '__________', col1 + 55, y, { width: 470 });
-        y = doc.y + 5; // Pega o Y real após o texto (caso ele quebre a linha) + padding
+        // --- Linha 3 (Endereço - Campo único) ---
+        drawField(doc, 'Endereço:', data.contratanteEndereco, { labelWidth: 60 });
         
         // --- Linha 4 ---
-        drawField(doc, 'Telefone:', data.contratanteTelefone, col1, y, { labelWidth: 50, valueWidth: 190 });
-        drawField(doc, 'E-mail:', data.contratanteEmail, col2, y, { labelWidth: 40, valueWidth: 270 });
-        y = doc.y + 15; // Pula linha
+        drawRow(doc, [
+            { label: 'Telefone:', value: data.contratanteTelefone, labelWidth: 50, colWidth: col2_1 },
+            { label: 'E-mail:', value: data.contratanteEmail, labelWidth: 40, colWidth: col2_2 }
+        ]);
 
-        doc.y = y; // Seta a posição Y final
         doc.moveDown(1.5); // Espaço extra
 
-        // --- 3. Seção IMÓVEL (Layout Manual v3) ---
-        doc.fontSize(11).font('Helvetica-Bold').text('IMÓVEL', { underline: true });
-        doc.moveDown(0.7);
-        y = doc.y;
+        // --- 3. Seção IMÓVEL (Layout Fluido) ---
+        drawSectionTitle(doc, 'IMÓVEL');
 
-        doc.font('Helvetica-Bold').text('Imóvel:', col1, y);
-        doc.font('Helvetica').text(data.imovelDescricao || '__________', col1 + 45, y, { width: 480 });
-        y = doc.y + 5;
-
-        doc.font('Helvetica-Bold').text('Endereço:', col1, y);
-        doc.font('Helvetica').text(data.imovelEndereco || '__________', col1 + 55, y, { width: 470 });
-        y = doc.y + 5;
+        // --- Linha Imóvel 1 e 2 ---
+        drawField(doc, 'Imóvel:', data.imovelDescricao, { labelWidth: 45 });
+        drawField(doc, 'Endereço:', data.imovelEndereco, { labelWidth: 55 });
         
         // --- Linha Imóvel 3 ---
-        rowHeight = drawField(doc, 'Matrícula:', data.imovelMatricula, col1, y, { labelWidth: 55, valueWidth: 185 });
-        drawField(doc, 'Valor:', formatCurrency(data.imovelValor), col2, y, { labelWidth: 35, valueWidth: 250 });
-        y += rowHeight + 5;
+        const colImovel_1 = (CONTENT_WIDTH * 0.55);
+        const colImovel_2 = (CONTENT_WIDTH * 0.45);
+
+        drawRow(doc, [
+            { label: 'Matrícula:', value: data.imovelMatricula, labelWidth: 55, colWidth: colImovel_1 },
+            { label: 'Valor:', value: formatCurrency(data.imovelValor), labelWidth: 35, colWidth: colImovel_2 }
+        ]);
 
         // --- Linha Imóvel 4 ---
-        rowHeight = drawField(doc, 'Adm. Condomínio:', data.imovelAdminCondominio, col1, y, { labelWidth: 95, valueWidth: 145 });
-        drawField(doc, 'Condomínio:', formatCurrency(data.imovelValorCondominio), col2, y, { labelWidth: 65, valueWidth: 220 });
-        y += rowHeight + 5;
+        drawRow(doc, [
+            { label: 'Adm. Condomínio:', value: data.imovelAdminCondominio, labelWidth: 95, colWidth: colImovel_1 },
+            { label: 'Condomínio:', value: formatCurrency(data.imovelValorCondominio), labelWidth: 65, colWidth: colImovel_2 }
+        ]);
 
         // --- Linha Imóvel 5 ---
-        rowHeight = drawField(doc, 'Chamada Capital:', data.imovelChamadaCapital, col1, y, { labelWidth: 95, valueWidth: 145 });
-        drawField(doc, 'Nº Parcelas:', data.imovelNumParcelas, col2, y, { labelWidth: 65, valueWidth: 220 });
-        y += rowHeight + 15;
+        drawRow(doc, [
+            { label: 'Chamada Capital:', value: data.imovelChamadaCapital, labelWidth: 95, colWidth: colImovel_1 },
+            { label: 'Nº Parcelas:', value: data.imovelNumParcelas, labelWidth: 65, colWidth: colImovel_2 }
+        ]);
 
-        doc.y = y;
         doc.moveDown(1.5);
 
-        // --- 4. Seção CLÁUSULAS (Código que já estava correto) ---
+        // --- 4. Seção CLÁUSULAS (Layout já era fluido, está OK) ---
         doc.font('Helvetica').fontSize(10);
+        doc.x = MARGIN; // Garante que o texto justificado comece na margem
         
         const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob n° 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
-        doc.text(textoPreambulo, { align: 'justify' });
+        doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(1);
         
         const clausula1 = `1º A venda é concebida a contar desta data pelo prazo de ${data.contratoPrazo || '____'} dias. Após esse período, o contrato permanece por prazo indeterminado ou até manifestação por escrito por quaisquer das partes, pelo menos 15 (quinze) dias anteriores à intenção de cancelamento, observando-se ainda o artigo 726 do Código Civil Vigente.`;
-        doc.text(clausula1, { align: 'justify' });
+        doc.text(clausula1, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(0.5);
 
         const clausula2 = `2º O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '____'}% sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro.`;
-        doc.text(clausula2, { align: 'justify' });
+        doc.text(clausula2, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(0.5);
         
         const clausula3 = '3º A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.';
-        doc.text(clausula3, { align: 'justify' });
+        doc.text(clausula3, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(0.5);
         
         const clausula4 = '4º O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.';
-        doc.text(clausula4, { align: 'justify' });
+        doc.text(clausula4, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(0.5);
         
         const clausula5 = '5º Em caso de qualquer controvérsia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.';
-        doc.text(clausula5, { align: 'justify' });
+        doc.text(clausula5, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(1);
 
         const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
-        doc.text(textoFechamento, { align: 'justify' });
+        doc.text(textoFechamento, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(2);
 
-        // --- 5. Assinaturas ---
+        // --- 5. Assinaturas (Layout já era fluido, está OK) ---
         const dataHoje = new Date().toLocaleDateString('pt-BR');
-        doc.text(`Joinville, ${dataHoje}`, { align: 'center' });
+        doc.text(`Joinville, ${dataHoje}`, { align: 'center', width: CONTENT_WIDTH });
         doc.moveDown(3);
 
-        doc.text('________________________________________', { align: 'center' });
-        doc.font('Helvetica-Bold').text(data.contratanteNome.toUpperCase() || 'CONTRATANTE', { align: 'center' });
-        doc.font('Helvetica').text(data.contratanteCpf || 'CPF/CNPJ', { align: 'center' });
+        doc.text('________________________________________', { align: 'center', width: CONTENT_WIDTH });
+        doc.font('Helvetica-Bold').text((data.contratanteNome || 'CONTRATANTE').toUpperCase(), { align: 'center', width: CONTENT_WIDTH });
+        doc.font('Helvetica').text(data.contratanteCpf || 'CPF/CNPJ', { align: 'center', width: CONTENT_WIDTH });
         
         doc.moveDown(3);
-        doc.text('________________________________________', { align: 'center' });
-        doc.font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center' });
-        doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center' });
+        doc.text('________________________________________', { align: 'center', width: CONTENT_WIDTH });
+        doc.font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center', width: CONTENT_WIDTH });
+        doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center', width: CONTENT_WIDTH });
         
         // --- 6. Finaliza o PDF ---
         doc.end();
