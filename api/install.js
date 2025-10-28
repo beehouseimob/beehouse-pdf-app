@@ -1,3 +1,4 @@
+// /api/install.js
 import axios from 'axios';
 // Importa as funções corretas do b24.js
 import { saveTokens, call } from '../utils/b24.js';
@@ -22,7 +23,6 @@ export default async function handler(req, res) {
             const tokens = {
                 access_token: params.AUTH_ID,
                 refresh_token: params.REFRESH_ID,
-                // Calcula timestamp de expiração (agora + AUTH_EXPIRES segundos)
                 expires_in: params.AUTH_EXPIRES ? Math.floor(Date.now() / 1000) + parseInt(params.AUTH_EXPIRES, 10) : Math.floor(Date.now() / 1000) + 3600,
                 domain: domain,
                 member_id: memberId // Essencial para salvar no KV
@@ -126,10 +126,11 @@ async function registerPlacement(handlerUrl, tokens) {
 
     console.log('[Install Register] Limpando botões antigos (se existirem)...');
     try {
+        // Passa os tokens como terceiro argumento para 'call'
         await call('placement.unbind', {
             PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
             HANDLER: handlerUrl
-        }, tokens); // Passa os tokens para 'call'
+        }, tokens); 
         console.log('[Install Register] Unbind (limpeza) concluído.');
     } catch (unbindError) {
         const errorCode = unbindError.details?.code || unbindError.details?.error;
@@ -141,11 +142,13 @@ async function registerPlacement(handlerUrl, tokens) {
     }
 
     console.log('[Install Register] Registrando novo botão...');
+    // Passa os tokens como terceiro argumento para 'call'
     await call('placement.bind', {
         PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
         HANDLER: handlerUrl,
         TITLE: 'Gerar Autorização PDF',
         DESCRIPTION: 'Gera PDF de autorização de vendas'
-    }, tokens); // Passa os tokens para 'call'
+    }, tokens); 
     console.log('[Install Register] Botão registrado com sucesso.');
 }
+

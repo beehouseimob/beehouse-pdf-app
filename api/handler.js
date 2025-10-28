@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
     try {
         // 1. Obtém tokens frescos (busca no KV e renova se necessário)
-        // getFreshTokens extrai o member_id da requisição (seja de req.body.auth.member_id ou req.body.member_id)
+        // getFreshTokens extrai o member_id da requisição
         const authTokens = await getFreshTokens(req);
 
         if (!authTokens) {
@@ -42,8 +42,6 @@ export default async function handler(req, res) {
         // Passa os 'authTokens' obtidos como terceiro argumento para 'call'
         const company = await call('crm.company.get', { id: companyId }, authTokens); 
 
-        // A função 'call' agora retorna 'response.data.result', então 'company' é o objeto direto
-        
         let proprietarioNome = '';
         let proprietarioTelefone = '';
         let proprietarioEmail = '';
@@ -54,18 +52,15 @@ export default async function handler(req, res) {
             // Prossegue com campos vazios
         } else {
             console.log('[Handler] Dados da empresa recebidos:', company);
-            // Preenche os dados
             proprietarioNome = company.TITLE || '';
             proprietarioTelefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
             proprietarioEmail = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
-            // *** IMPORTANTE: Verifique se o ID do campo customizado (UF_CRM_...) está correto ***
-            proprietarioCpf = company.UF_CRM_66C37392C9F3D || '';
+            proprietarioCpf = company.UF_CRM_66C37392C9F3D || ''; // <-- Verifique se este ID de campo customizado está correto
         }
 
         // 4. Envia o Formulário HTML como resposta
         console.log('[Handler] Enviando formulário HTML.');
         res.setHeader('Content-Type', 'text/html');
-        // (Seu código HTML completo vai aqui)
         res.send(`
             <!DOCTYPE html>
             <html lang="pt-br">
@@ -78,26 +73,24 @@ export default async function handler(req, res) {
                     form { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
                     .form-section { margin-bottom: 25px; border-bottom: 1px solid #f0f0f0; padding-bottom: 20px; }
                     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-                    div { margin-bottom: 0; } /* Ajustado para grid */
+                    div { margin-bottom: 0; }
                     label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
                     input[type="text"], input[type="number"], input[type="email"], select {
-                        width: 100%; /* Ocupa 100% da célula do grid */
+                        width: 100%;
                         padding: 10px; 
                         border: 1px solid #ccc; 
                         border-radius: 5px; 
                         font-size: 14px;
-                        box-sizing: border-box; /* Garante que padding não estoure a largura */
+                        box-sizing: border-box;
                     }
-                    /* Ajustes para colunas maiores */
                     .grid-col-span-2 { grid-column: span 2; }
-                    .grid-col-span-3 { grid-column: 1 / -1; } /* Ocupa todas as colunas */
+                    .grid-col-span-3 { grid-column: 1 / -1; }
                     
                     button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
                     button:hover { background-color: #0056b3; }
 
-                    /* Media query para telas menores */
                     @media (max-width: 600px) {
-                        .form-grid { grid-template-columns: 1fr; } /* Empilha tudo em uma coluna */
+                        .form-grid { grid-template-columns: 1fr; }
                         .grid-col-span-2 { grid-column: span 1; }
                     }
                 </style>
@@ -215,3 +208,4 @@ export default async function handler(req, res) {
         res.status(errorStatus).send(`Erro ao carregar formulário: ${errorMessage}`);
     }
 }
+

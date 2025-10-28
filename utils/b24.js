@@ -102,11 +102,10 @@ export async function getFreshTokens(req) {
 
         } catch (refreshError) {
             console.error(`[getFreshTokens] Erro ao renovar token para member_id ${memberId}:`, refreshError.response ? JSON.stringify(refreshError.response.data) : refreshError.message);
-            // Se a renovação falhar, o usuário precisa reinstalar
-            return null;
+            return null; // Retorna null indicando falha
         }
     } else if (!tokens.expires_in) {
-        console.warn(`[getFreshTokens] Token para member_id ${memberId} não possui 'expires_in'. Assumindo como válido, mas a renovação pode falhar.`);
+        console.warn(`[getFreshTokens] Token para member_id ${memberId} não possui 'expires_in'. Assumindo como válido.`);
     } else {
         console.log(`[getFreshTokens] Token existente ainda é válido para member_id ${memberId}.`);
     }
@@ -122,7 +121,6 @@ export async function getFreshTokens(req) {
  * @returns {Promise<object>} - A propriedade 'result' da resposta da API
  */
 export async function call(method, params = {}, authTokens) {
-    // Validação essencial dos tokens recebidos
     if (!authTokens || !authTokens.access_token || !authTokens.domain) {
         console.error('[call] Chamada de API tentada sem authTokens válidos (access_token/domain ausentes).');
         throw new Error('Tokens de autenticação incompletos ou ausentes.');
@@ -130,20 +128,18 @@ export async function call(method, params = {}, authTokens) {
 
     const { access_token, domain } = authTokens;
     
-    // *** A CORREÇÃO MAIS IMPORTANTE: USAR CRASES (`) ***
+    // URL construída com crases (`)
     const url = `https://${domain}/rest/${method}`; 
 
     try {
         console.log(`[call] Chamando API: ${method} em ${domain}`);
         
-        // Realiza a chamada POST. Parâmetros no corpo, Token na query 'auth'.
         const response = await axios.post(url, params, {
-            params: { auth: access_token } 
+            params: { auth: access_token } // Token como query parameter
         });
 
         console.log(`[call] Chamada API bem-sucedida: ${method}`);
 
-        // Verifica se a própria resposta 200 OK contém um erro do Bitrix24
         if (response.data && response.data.error) {
             console.error(`[call] Erro da API Bitrix24 (${method}):`, response.data.error_description);
             const apiError = new Error(response.data.error_description || response.data.error);
@@ -151,19 +147,16 @@ export async function call(method, params = {}, authTokens) {
             throw apiError;
         }
 
-        // Retorna apenas a parte 'result'
         return response.data?.result;
 
     } catch (error) {
-        // Se for um erro já tratado (da API), apenas relança
         if (error.details?.code) {
-            throw error;
+            throw error; // Relança erro da API Bitrix
         }
 
-        // Se for um erro do Axios (rede, DNS, status 4xx/5xx)
         console.error(`[call] Erro de Axios/Rede (${method}). Status: ${error.response?.status}`);
         if (error.code === 'ENOTFOUND') {
-           console.error(`[call] FALHA DE DNS para host: ${error.hostname || domain}. Verifique o valor do 'domain'.`);
+           console.error(`[call] FALHA DE DNS para host: ${error.hostname || domain}.`);
            error.message = `Falha de DNS para ${error.hostname || domain} (getaddrinfo ENOTFOUND)`;
         } else if (error.response) {
            console.error('[call] Resposta de Erro Axios:', JSON.stringify(error.response.data));
@@ -178,3 +171,4 @@ export async function call(method, params = {}, authTokens) {
         throw enhancedError;
     }
 }
+
