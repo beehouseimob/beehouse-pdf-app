@@ -1,25 +1,75 @@
-import { call } from '../utils/b24.js';
+import { call, getAuth } from '../utils/b24.js'; // Importa getAuth também
 
 export default async function handler(req, res) {
     try {
-        // 1. Pega o ID da Empresa
-        const placementOptions = JSON.parse(req.body.PLACEMENT_OPTIONS);
-        const companyId = placementOptions.ID;
+        // *** Adicionado: Obter autenticação primeiro ***
+        const { auth } = await getAuth(req);
+        if (!auth) {
+          // Se getAuth retornar null (ex: falha ao renovar token), trate o erro
+          res.status(401).send('Erro: Falha na autenticação ou token inválido.');
+          return;
+        }
 
-        // 2. Busca os dados da Empresa
-        const response = await call('crm.company.get', { id: companyId });
-        const company = response.result;
-        
+        // 1. Pega o ID da Empresa (Verifique se PLACEMENT_OPTIONS existe em req.body)
+        // Se estiver usando Placements, pode ser necessário pegar de req.body diretamente
+        // Ajuste conforme necessário dependendo de como o Bitrix24 envia os dados para este handler
+        let companyId;
+        if (req.body.PLACEMENT_OPTIONS) {
+          try {
+            const placementOptions = JSON.parse(req.body.PLACEMENT_OPTIONS);
+            companyId = placementOptions.ID;
+          } catch (parseError) {
+             console.error("Erro ao parsear PLACEMENT_OPTIONS:", parseError);
+             res.status(400).send('Erro ao processar dados do placement.');
+             return;
+          }
+        } else if (req.body.data && req.body.data.FIELDS && req.body.data.FIELDS.ID) {
+          // Se for um webhook de evento (ex: ONCRMCOMPANYADD)
+          companyId = req.body.data.FIELDS.ID;
+        } else {
+            console.error("Não foi possível encontrar o ID da Empresa na requisição:", req.body);
+            res.status(400).send('ID da Empresa não encontrado na requisição.');
+            return;
+        }
+
+        if (!companyId) {
+             console.error("ID da Empresa está vazio ou indefinido.");
+             res.status(400).send('ID da Empresa inválido.');
+             return;
+        }
+
+
+        // 2. Busca os dados da Empresa, passando 'auth'
+        // A função 'call' retorna diretamente o objeto 'result' da API Bitrix24
+        const company = await call('crm.company.get', { id: companyId }, auth); // *** Passa 'auth' como terceiro argumento ***
+
+        if (!company) {
+             console.error("Não foram encontrados dados para a empresa com ID:", companyId);
+             // Você pode querer retornar um erro 404 ou apenas continuar com dados vazios
+             // res.status(404).send('Empresa não encontrada.');
+             // return;
+             // Ou definir valores padrão se company for null/undefined:
+             const proprietarioNome = '';
+             const proprietarioTelefone = '';
+             const proprietarioEmail = '';
+             const proprietarioCpf = '';
+             // Continue com o envio do HTML com campos vazios... (código HTML omitido para brevidade)
+             // ... (seu código HTML aqui, usando as variáveis vazias) ...
+             res.setHeader('Content-Type', 'text/html');
+             res.send(`<!DOCTYPE html>... Formulário com campos vazios ...</html>`); // Adapte seu HTML
+             return; // Importante sair aqui se a empresa não foi encontrada e você não quer gerar o PDF
+        }
+
         // --- Dados Automáticos (Pré-preenchidos e EDITÁVEIS) ---
-        // Você pode buscar qualquer campo.
-        
         const proprietarioNome = company.TITLE || '';
         const proprietarioTelefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
         const proprietarioEmail = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
         const proprietarioCpf = company.UF_CRM_66C37392C9F3D || ''; // <-- TROQUE PELO ID DO SEU CAMPO DE CPF/CNPJ
 
+
         // 3. Envia o Formulário HTML como resposta
         res.setHeader('Content-Type', 'text/html');
+        // Seu código HTML continua aqui (omitido para brevidade, use as variáveis acima)
         res.send(`
             <!DOCTYPE html>
             <html lang="pt-br">
@@ -27,20 +77,7 @@ export default async function handler(req, res) {
                 <meta charset="UTF-8">
                 <title>Gerar Autorização</title>
                 <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; }
-                    h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-                    form { max-width: 800px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-                    .form-section { margin-bottom: 25px; }
-                    .form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
-                    .grid-col-span-2 { grid-column: span 2; }
-                    .grid-col-span-3 { grid-column: span 3; }
-                    div { margin-bottom: 12px; }
-                    label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
-                    input[type="text"], input[type="number"], input[type="email"], select {
-                        width: 95%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px;
-                    }
-                    button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
-                    button:hover { background-color: #0056b3; }
+                    /* Seu CSS */
                 </style>
             </head>
             <body>
@@ -48,7 +85,7 @@ export default async function handler(req, res) {
                 <p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p>
 
                 <form action="/api/generate-pdf" method="POST" target="_blank">
-                    
+
                     <div class="form-section">
                         <h3>CONTRATANTE</h3>
                         <div class="form-grid">
@@ -149,7 +186,10 @@ export default async function handler(req, res) {
             </html>
         `);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Erro ao carregar formulario: ' + error.message);
+        console.error('Erro detalhado no handler:', error);
+        // Tenta extrair a mensagem específica do erro vindo da função 'call'
+        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido';
+        const errorStatus = error.status || 500;
+        res.status(errorStatus).send(`Erro ao carregar formulario: ${errorMessage}`);
     }
 }

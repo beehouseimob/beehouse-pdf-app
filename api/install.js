@@ -62,7 +62,7 @@ export default async function (req, res) {
         console.log('Registrando novo botão apontando para:', selfUrl);
         await call('placement.bind', {
             PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
-            HANDLER: selfUrl, // Aponta para si mesmo!
+            HANDLER: selfUrl,
             TITLE: 'Gerar Autorização PDF',
             DESCRIPTION: 'Gera PDF de autorização de vendas'
         });
