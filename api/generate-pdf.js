@@ -15,6 +15,7 @@ function formatCurrency(value) {
 
 // Função helper para desenhar o cabeçalho
 function drawHeader(doc) {
+    // Esta função está correta. A primeira chamada define o Y inicial.
     doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN, { align: 'center' });
     doc.moveDown(0.5);
     doc.fontSize(10).font('Helvetica').text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', { align: 'center' });
@@ -24,15 +25,32 @@ function drawHeader(doc) {
     doc.moveDown(2); // Mais espaço
 }
 
+// ==================================================================
+// FUNÇÃO CORRIGIDA
+// ==================================================================
 // Função helper para desenhar um Título de Seção
 function drawSectionTitle(doc, title) {
-    doc.fontSize(11).font('Helvetica-Bold').text(title, { underline: true });
-    doc.moveDown(0.7);
+    // Pega o Y atual. O X será explícito.
+    const y = doc.y;
+
+    // USA A FORMA EXPLÍCITA: doc.text(string, x, y, options)
+    // Isso evita o erro NaN, pois não depende do estado implícito de doc.x
+    doc.fontSize(11).font('Helvetica-Bold').text(title, MARGIN, y, { 
+        underline: true,
+        // Define a largura para o alinhamento (necessário para sublinhado)
+        width: CONTENT_WIDTH,
+        align: 'left'
+    });
+    
+    // O .text() acima já atualizou o doc.y para depois do título.
+    // Adicionamos um moveDown() para o padding.
+    doc.moveDown(0.7); 
     doc.fontSize(10); // Reseta o tamanho para os campos
 }
+// ==================================================================
 
 /**
- * [NOVO HELPER] Desenha uma linha com múltiplos campos (colunas).
+ * [HELPER] Desenha uma linha com múltiplos campos (colunas).
  * Calcula a altura máxima entre todos os campos da linha antes de desenhar,
  * para garantir o alinhamento correto.
  * * @param {PDFDocument} doc O documento PDF
@@ -40,7 +58,7 @@ function drawSectionTitle(doc, title) {
  */
 function drawRow(doc, fields) {
     const startY = doc.y;
-    let currentX = doc.x;
+    let currentX = doc.x; // Usa o doc.x atual (deve ser MARGIN)
     let maxHeight = 0;
 
     // 1. Calcular a altura máxima da linha
@@ -80,7 +98,7 @@ function drawRow(doc, fields) {
 }
 
 /**
- * [NOVO HELPER] Desenha um único campo que ocupa a largura total (ou quase total).
+ * [HELPER] Desenha um único campo que ocupa a largura total (ou quase total).
  * Ideal para campos longos como "Endereço".
  * * @param {PDFDocument} doc O documento PDF
  * @param {string} label O label do campo
@@ -90,7 +108,7 @@ function drawRow(doc, fields) {
 function drawField(doc, label, value, options = {}) {
     const { labelWidth = 60 } = options;
     const startY = doc.y;
-    const startX = doc.x;
+    const startX = doc.x; // Usa o doc.x atual (deve ser MARGIN)
     const val = value || '__________';
     
     // Calcula a largura do valor
@@ -140,10 +158,11 @@ export default async function handler(req, res) {
         drawHeader(doc);
         
         // Seta o X inicial para o conteúdo fluir
+        // Esta linha é crucial para drawRow e drawField
         doc.x = MARGIN; 
 
         // --- 2. Seção CONTRATANTE (Layout Fluido) ---
-        drawSectionTitle(doc, 'CONTRATANTE');
+        drawSectionTitle(doc, 'CONTRATANTE'); // <--- Esta chamada agora é segura
         
         // Define as larguras das colunas (Total = CONTENT_WIDTH)
         const col3_1 = (CONTENT_WIDTH * 0.45); // 45%
@@ -179,7 +198,7 @@ export default async function handler(req, res) {
         doc.moveDown(1.5); // Espaço extra
 
         // --- 3. Seção IMÓVEL (Layout Fluido) ---
-        drawSectionTitle(doc, 'IMÓVEL');
+        drawSectionTitle(doc, 'IMÓVEL'); // <--- Esta chamada agora é segura
 
         // --- Linha Imóvel 1 e 2 ---
         drawField(doc, 'Imóvel:', data.imovelDescricao, { labelWidth: 45 });
