@@ -109,7 +109,7 @@ async function generatePdfPromise(data) {
 
             // --- Linha 5: Endereço (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke();
-            doc.font('Helvetica-Bold').text('Endereço Residencial:', labelX + 25, y + textYPad);
+            doc.font('Helvetica-Bold').text('Endereço Residencial:', labelX, y + textYPad);
             doc.font('Helvetica').text(data.contratanteEndereco || '', valueXOffset + 25, y + textYPad, { width: CONTENT_WIDTH - (valueXOffset + 25) - MARGIN });
             y += rowHeight;
 
