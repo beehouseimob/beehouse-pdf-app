@@ -6,15 +6,13 @@ const PAGE_WIDTH = 612; // A4 em pontos
 const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
-// --- HELPERS BÁSICOS (MANTIDOS) ---
+// --- HELPERS BÁSICOS ---
 
-// Função helper para formatar R$
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// Função helper para desenhar o cabeçalho (Baseado em image_978dfe.png)
 function drawHeader(doc) {
     doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN, { align: 'center' });
     doc.moveDown(0.5);
@@ -25,39 +23,35 @@ function drawHeader(doc) {
     doc.moveDown(2);
 }
 
-// Função helper para desenhar um Título de Seção (Corrigido)
 function drawSectionTitle(doc, title) {
     doc.fontSize(11).font('Helvetica-Bold').text(title, MARGIN, doc.y, { 
         underline: true,
         width: CONTENT_WIDTH,
         align: 'left'
     });
-    doc.moveDown(1); // Um pouco mais de espaço
-    doc.fontSize(10); // Reseta o tamanho
+    doc.moveDown(1); 
+    doc.fontSize(10); 
 }
 
 /**
- * [HELPER SIMPLES] Apenas calcula a altura máxima de um campo.
- * Não desenha nada, apenas calcula.
+ * [HELPER CORRIGIDO]
+ * Apenas calcula a altura. 
+ * Não mexe no estado da fonte de forma a causar o bug "Not a supported font".
  */
 function getHeight(doc, label, value, labelWidth, valueWidth) {
     const val = value || '__________';
     const safeLabel = label || '';
     const safeValue = val ? String(val) : '__________';
 
-    // Salva fontes atuais
-    const oldFont = doc.fontName;
-    
+    // Calcula as alturas sem alterar o estado da fonte de forma persistente
     const labelH = doc.font('Helvetica-Bold').heightOfString(safeLabel, { width: labelWidth });
     const valueH = doc.font('Helvetica').heightOfString(safeValue, { width: valueWidth });
     
-    // Restaura fonte
-    doc.font(oldFont);
     return Math.max(labelH, valueH);
 }
 
 
-// --- HANDLER PRINCIPAL (ABORDAGEM 100% MANUAL / "BLOCOS") ---
+// --- HANDLER PRINCIPAL (LÓGICA CORRIGIDA: CALCULAR > DESENHAR > AVANÇAR) ---
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -80,8 +74,7 @@ export default async function handler(req, res) {
         // --- 1. Cabeçalho ---
         drawHeader(doc);
         
-        // Ponto de partida vertical
-        let y = doc.y;
+        let y = doc.y; // Ponto de partida vertical
 
         // --- 2. Seção CONTRATANTE ---
         drawSectionTitle(doc, 'CONTRATANTE');
@@ -91,121 +84,152 @@ export default async function handler(req, res) {
         const c1_x = MARGIN; // 50
         const c2_x = 250;
         const c3_x = 430;
-        let h1 = 0, h2 = 0, h3 = 0; // Alturas
+        let h1 = 0, h2 = 0, h3 = 0, maxH = 0; // Alturas
 
         // --- Linha 1: Nome, CPF, RG ---
-        doc.font('Helvetica-Bold').text('Nome:', c1_x, y, { width: 40 });
-        doc.font('Helvetica').text(data.contratanteNome || '__________', c1_x + 40, y, { width: 150 });
-        h1 = getHeight(doc, 'Nome:', data.contratanteNome, 40, 150);
+        const nome_lbl = 40, nome_val = (c2_x - c1_x) - nome_lbl - 10;
+        const cpf_lbl = 30, cpf_val = (c3_x - c2_x) - cpf_lbl - 10;
+        const rg_lbl = 40, rg_val = (PAGE_END - c3_x) - rg_lbl;
 
-        doc.font('Helvetica-Bold').text('CPF:', c2_x, y, { width: 30 });
-        doc.font('Helvetica').text(data.contratanteCpf || '__________', c2_x + 30, y, { width: 140 });
-        h2 = getHeight(doc, 'CPF:', data.contratanteCpf, 30, 140);
+        // 1. Calcular alturas
+        h1 = getHeight(doc, 'Nome:', data.contratanteNome, nome_lbl, nome_val);
+        h2 = getHeight(doc, 'CPF:', data.contratanteCpf, cpf_lbl, cpf_val);
+        h3 = getHeight(doc, 'RG nº:', data.contratanteRg, rg_lbl, rg_val);
+        maxH = Math.max(h1, h2, h3);
+
+        // 2. Desenhar
+        doc.font('Helvetica-Bold').text('Nome:', c1_x, y, { width: nome_lbl });
+        doc.font('Helvetica').text(data.contratanteNome || '__________', c1_x + nome_lbl, y, { width: nome_val });
+        doc.font('Helvetica-Bold').text('CPF:', c2_x, y, { width: cpf_lbl });
+        doc.font('Helvetica').text(data.contratanteCpf || '__________', c2_x + cpf_lbl, y, { width: cpf_val });
+        doc.font('Helvetica-Bold').text('RG nº:', c3_x, y, { width: rg_lbl });
+        doc.font('Helvetica').text(data.contratanteRg || '__________', c3_x + rg_lbl, y, { width: rg_val });
         
-        doc.font('Helvetica-Bold').text('RG nº:', c3_x, y, { width: 40 });
-        doc.font('Helvetica').text(data.contratanteRg || '__________', c3_x + 40, y, { width: (PAGE_END - c3_x - 40) });
-        h3 = getHeight(doc, 'RG nº:', data.contratanteRg, 40, (PAGE_END - c3_x - 40));
-        
-        y += Math.max(h1, h2, h3) + 8; // Avança Y
+        // 3. Avançar Y
+        y += maxH + 8; 
 
         // --- Linha 2: Profissão, Estado Civil, Regime ---
-        doc.font('Helvetica-Bold').text('Profissão:', c1_x, y, { width: 55 });
-        doc.font('Helvetica').text(data.contratanteProfissao || '__________', c1_x + 55, y, { width: 135 });
-        h1 = getHeight(doc, 'Profissão:', data.contratanteProfissao, 55, 135);
+        const prof_lbl = 55, prof_val = (c2_x - c1_x) - prof_lbl - 10;
+        const est_lbl = 65, est_val = (c3_x - c2_x) - est_lbl - 10;
+        const reg_lbl = 45, reg_val = (PAGE_END - c3_x) - reg_lbl;
 
-        doc.font('Helvetica-Bold').text('Estado Civil:', c2_x, y, { width: 65 });
-        doc.font('Helvetica').text(data.contratanteEstadoCivil || '__________', c2_x + 65, y, { width: 105 });
-        h2 = getHeight(doc, 'Estado Civil:', data.contratanteEstadoCivil, 65, 105);
+        h1 = getHeight(doc, 'Profissão:', data.contratanteProfissao, prof_lbl, prof_val);
+        h2 = getHeight(doc, 'Estado Civil:', data.contratanteEstadoCivil, est_lbl, est_val);
+        h3 = getHeight(doc, 'Regime:', data.contratanteRegimeCasamento, reg_lbl, reg_val);
+        maxH = Math.max(h1, h2, h3);
 
-        doc.font('Helvetica-Bold').text('Regime:', c3_x, y, { width: 45 });
-        doc.font('Helvetica').text(data.contratanteRegimeCasamento || '__________', c3_x + 45, y, { width: (PAGE_END - c3_x - 45) });
-        h3 = getHeight(doc, 'Regime:', data.contratanteRegimeCasamento, 45, (PAGE_END - c3_x - 45));
-
-        y += Math.max(h1, h2, h3) + 8;
+        doc.font('Helvetica-Bold').text('Profissão:', c1_x, y, { width: prof_lbl });
+        doc.font('Helvetica').text(data.contratanteProfissao || '__________', c1_x + prof_lbl, y, { width: prof_val });
+        doc.font('Helvetica-Bold').text('Estado Civil:', c2_x, y, { width: est_lbl });
+        doc.font('Helvetica').text(data.contratanteEstadoCivil || '__________', c2_x + est_lbl, y, { width: est_val });
+        doc.font('Helvetica-Bold').text('Regime:', c3_x, y, { width: reg_lbl });
+        doc.font('Helvetica').text(data.contratanteRegimeCasamento || '__________', c3_x + reg_lbl, y, { width: reg_val });
+        
+        y += maxH + 8;
 
         // --- Linha 3: Endereço (Span all columns) ---
-        doc.font('Helvetica-Bold').text('Endereço:', c1_x, y, { width: 60 });
-        doc.font('Helvetica').text(data.contratanteEndereco || '__________', c1_x + 60, y, { width: CONTENT_WIDTH - 60 });
-        h1 = getHeight(doc, 'Endereço:', data.contratanteEndereco, 60, CONTENT_WIDTH - 60);
+        const end_lbl = 60, end_val = CONTENT_WIDTH - end_lbl;
+        h1 = getHeight(doc, 'Endereço:', data.contratanteEndereco, end_lbl, end_val);
+
+        doc.font('Helvetica-Bold').text('Endereço:', c1_x, y, { width: end_lbl });
+        doc.font('Helvetica').text(data.contratanteEndereco || '__________', c1_x + end_lbl, y, { width: end_val });
         y += h1 + 8;
 
         // --- Linha 4: Telefone, E-mail (E-mail spans 2 cols) ---
-        doc.font('Helvetica-Bold').text('Telefone:', c1_x, y, { width: 50 });
-        doc.font('Helvetica').text(data.contratanteTelefone || '__________', c1_x + 50, y, { width: 140 });
-        h1 = getHeight(doc, 'Telefone:', data.contratanteTelefone, 50, 140);
+        const tel_lbl = 50, tel_val = (c2_x - c1_x) - tel_lbl - 10;
+        const email_lbl = 40, email_val = (PAGE_END - c2_x) - email_lbl; 
+        
+        h1 = getHeight(doc, 'Telefone:', data.contratanteTelefone, tel_lbl, tel_val);
+        h2 = getHeight(doc, 'E-mail:', data.contratanteEmail, email_lbl, email_val);
+        maxH = Math.max(h1, h2);
 
-        doc.font('Helvetica-Bold').text('E-mail:', c2_x, y, { width: 40 });
-        const email_width = (PAGE_END - c2_x - 40); // E-mail começa na col 2 e vai até o fim
-        doc.font('Helvetica').text(data.contratanteEmail || '__________', c2_x + 40, y, { width: email_width });
-        h2 = getHeight(doc, 'E-mail:', data.contratanteEmail, 40, email_width);
+        doc.font('Helvetica-Bold').text('Telefone:', c1_x, y, { width: tel_lbl });
+        doc.font('Helvetica').text(data.contratanteTelefone || '__________', c1_x + tel_lbl, y, { width: tel_val });
+        doc.font('Helvetica-Bold').text('E-mail:', c2_x, y, { width: email_lbl });
+        doc.font('Helvetica').text(data.contratanteEmail || '__________', c2_x + email_lbl, y, { width: email_val });
 
-        y += Math.max(h1, h2) + 15; // Próxima seção
+        y += maxH + 15; // Próxima seção
 
         // --- 3. Seção IMÓVEL ---
+        doc.y = y; // Seta o Y para o drawSectionTitle
         drawSectionTitle(doc, 'IMÓVEL');
         y = doc.y;
 
         // --- Linha Imóvel 1 (2-column layout) ---
-        const cI_2_x = 330; // Coluna 2 para Imóvel/Endereço
+        const cI_2_x = 330; 
+        const imovel_lbl = 45, imovel_val = (cI_2_x - c1_x) - imovel_lbl - 10; 
+        const endI_lbl = 55, endI_width = (PAGE_END - cI_2_x) - endI_lbl;
         
-        doc.font('Helvetica-Bold').text('Imóvel:', c1_x, y, { width: 45 });
-        const imovel_width = (cI_2_x - c1_x) - 45 - 10; // Espaço entre colunas
-        doc.font('Helvetica').text(data.imovelDescricao || '__________', c1_x + 45, y, { width: imovel_width });
-        h1 = getHeight(doc, 'Imóvel:', data.imovelDescricao, 45, imovel_width);
+        h1 = getHeight(doc, 'Imóvel:', data.imovelDescricao, imovel_lbl, imovel_val);
+        h2 = getHeight(doc, 'Endereço:', data.imovelEndereco, endI_lbl, endI_width);
+        maxH = Math.max(h1, h2);
 
-        doc.font('Helvetica-Bold').text('Endereço:', cI_2_x, y, { width: 55 });
-        const endI_width = (PAGE_END - cI_2_x - 55);
-        doc.font('Helvetica').text(data.imovelEndereco || '__________', cI_2_x + 55, y, { width: endI_width });
-        h2 = getHeight(doc, 'Endereço:', data.imovelEndereco, 55, endI_width);
-
-        y += Math.max(h1, h2) + 8;
+        doc.font('Helvetica-Bold').text('Imóvel:', c1_x, y, { width: imovel_lbl });
+        doc.font('Helvetica').text(data.imovelDescricao || '__________', c1_x + imovel_lbl, y, { width: imovel_val });
+        doc.font('Helvetica-Bold').text('Endereço:', cI_2_x, y, { width: endI_lbl });
+        doc.font('Helvetica').text(data.imovelEndereco || '__________', cI_2_x + endI_lbl, y, { width: endI_width });
+        
+        y += maxH + 8;
 
         // --- Linha Imóvel 2 (3-column layout) ---
         // Re-usa c1_x, c2_x, c3_x
-        doc.font('Helvetica-Bold').text('Matrícula:', c1_x, y, { width: 55 });
-        doc.font('Helvetica').text(data.imovelMatricula || '__________', c1_x + 55, y, { width: 135 });
-        h1 = getHeight(doc, 'Matrícula:', data.imovelMatricula, 55, 135);
+        const mat_lbl = 55, mat_val = (c2_x - c1_x) - mat_lbl - 10;
+        const val_lbl = 35, val_val = (c3_x - c2_x) - val_lbl - 10;
+        const adm_lbl = 95, adm_val = (PAGE_END - c3_x) - adm_lbl;
+        
+        h1 = getHeight(doc, 'Matrícula:', data.imovelMatricula, mat_lbl, mat_val);
+        h2 = getHeight(doc, 'Valor:', formatCurrency(data.imovelValor), val_lbl, val_val);
+        h3 = getHeight(doc, 'Adm. Condomínio:', data.imovelAdminCondominio, adm_lbl, adm_val);
+        maxH = Math.max(h1, h2, h3);
 
-        doc.font('Helvetica-Bold').text('Valor:', c2_x, y, { width: 35 });
-        doc.font('Helvetica').text(formatCurrency(data.imovelValor) || '__________', c2_x + 35, y, { width: 135 });
-        h2 = getHeight(doc, 'Valor:', formatCurrency(data.imovelValor), 35, 135);
+        doc.font('Helvetica-Bold').text('Matrícula:', c1_x, y, { width: mat_lbl });
+        doc.font('Helvetica').text(data.imovelMatricula || '__________', c1_x + mat_lbl, y, { width: mat_val });
+        doc.font('Helvetica-Bold').text('Valor:', c2_x, y, { width: val_lbl });
+        doc.font('Helvetica').text(formatCurrency(data.imovelValor) || '__________', c2_x + val_lbl, y, { width: val_val });
+        doc.font('Helvetica-Bold').text('Adm. Condomínio:', c3_x, y, { width: adm_lbl });
+        doc.font('Helvetica').text(data.imovelAdminCondominio || '__________', c3_x + adm_lbl, y, { width: adm_val });
         
-        doc.font('Helvetica-Bold').text('Adm. Condomínio:', c3_x, y, { width: 95 });
-        doc.font('Helvetica').text(data.imovelAdminCondominio || '__________', c3_x + 95, y, { width: (PAGE_END - c3_x - 95) });
-        h3 = getHeight(doc, 'Adm. Condomínio:', data.imovelAdminCondominio, 95, (PAGE_END - c3_x - 95));
-        
-        y += Math.max(h1, h2, h3) + 8;
+        y += maxH + 8;
 
         // --- Linha Imóvel 3 (3-column layout) ---
-        doc.font('Helvetica-Bold').text('Condomínio:', c1_x, y, { width: 65 });
-        doc.font('Helvetica').text(formatCurrency(data.imovelValorCondominio) || '__________', c1_x + 65, y, { width: 125 });
-        h1 = getHeight(doc, 'Condomínio:', formatCurrency(data.imovelValorCondominio), 65, 125);
-        
-        doc.font('Helvetica-Bold').text('Chamada Capital:', c2_x, y, { width: 95 });
-        doc.font('Helvetica').text(data.imovelChamadaCapital || '__________', c2_x + 95, y, { width: 75 });
-        h2 = getHeight(doc, 'Chamada Capital:', data.imovelChamadaCapital, 95, 75);
+        const cond_lbl = 65, cond_val = (c2_x - c1_x) - cond_lbl - 10;
+        const cha_lbl = 95, cha_val = (c3_x - c2_x) - cha_lbl - 10;
+        const parc_lbl = 65, parc_val = (PAGE_END - c3_x) - parc_lbl;
 
-        doc.font('Helvetica-Bold').text('Nº Parcelas:', c3_x, y, { width: 65 });
-        doc.font('Helvetica').text(data.imovelNumParcelas || '__________', c3_x + 65, y, { width: (PAGE_END - c3_x - 65) });
-        h3 = getHeight(doc, 'Nº Parcelas:', data.imovelNumParcelas, 65, (PAGE_END - c3_x - 65));
+        h1 = getHeight(doc, 'Condomínio:', formatCurrency(data.imovelValorCondominio), cond_lbl, cond_val);
+        h2 = getHeight(doc, 'Chamada Capital:', data.imovelChamadaCapital, cha_lbl, cha_val);
+        h3 = getHeight(doc, 'Nº Parcelas:', data.imovelNumParcelas, parc_lbl, parc_val);
+        maxH = Math.max(h1, h2, h3);
         
-        y += Math.max(h1, h2, h3) + 15; // Move e dá espaço
+        doc.font('Helvetica-Bold').text('Condomínio:', c1_x, y, { width: cond_lbl });
+        doc.font('Helvetica').text(formatCurrency(data.imovelValorCondominio) || '__________', c1_x + cond_lbl, y, { width: cond_val });
+        doc.font('Helvetica-Bold').text('Chamada Capital:', c2_x, y, { width: cha_lbl });
+        doc.font('Helvetica').text(data.imovelChamadaCapital || '__________', c2_x + cha_lbl, y, { width: cha_val });
+        doc.font('Helvetica-Bold').text('Nº Parcelas:', c3_x, y, { width: parc_lbl });
+        doc.font('Helvetica').text(data.imovelNumParcelas || '__________', c3_x + parc_lbl, y, { width: parc_val });
+        
+        y += maxH + 15; // Move e dá espaço
 
         // --- 4. Seção CONTRATO ---
+        doc.y = y;
         drawSectionTitle(doc, 'CONTRATO');
         y = doc.y;
 
         // --- Linha Contrato 1 (2-column layout) ---
         // Re-usa cI_2_x
-        doc.font('Helvetica-Bold').text('Prazo (dias):', c1_x, y, { width: 70 });
-        doc.font('Helvetica').text(data.contratoPrazo || '__________', c1_x + 70, y, { width: 200 });
-        h1 = getHeight(doc, 'Prazo (dias):', data.contratoPrazo, 70, 200);
-        
-        doc.font('Helvetica-Bold').text('Comissão (%):', cI_2_x, y, { width: 70 });
-        doc.font('Helvetica').text(data.contratoComissaoPct || '__________', cI_2_x + 70, y, { width: (PAGE_END - cI_2_x - 70) });
-        h2 = getHeight(doc, 'Comissão (%):', data.contratoComissaoPct, 70, (PAGE_END - cI_2_x - 70));
+        const prazo_lbl = 70, prazo_val = (cI_2_x - c1_x) - prazo_lbl - 10;
+        const com_lbl = 70, com_val = (PAGE_END - cI_2_x) - com_lbl;
 
-        y += Math.max(h1, h2) + 15; // Move e dá espaço
+        h1 = getHeight(doc, 'Prazo (dias):', data.contratoPrazo, prazo_lbl, prazo_val);
+        h2 = getHeight(doc, 'Comissão (%):', data.contratoComissaoPct, com_lbl, com_val);
+        maxH = Math.max(h1, h2);
+
+        doc.font('Helvetica-Bold').text('Prazo (dias):', c1_x, y, { width: prazo_lbl });
+        doc.font('Helvetica').text(data.contratoPrazo || '__________', c1_x + prazo_lbl, y, { width: prazo_val });
+        doc.font('Helvetica-Bold').text('Comissão (%):', cI_2_x, y, { width: com_lbl });
+        doc.font('Helvetica').text(data.contratoComissaoPct || '__________', cI_2_x + com_lbl, y, { width: com_val });
+
+        y += maxH + 15; // Move e dá espaço
 
         // --- 5. Seção CLÁUSULAS ---
         doc.y = y;
