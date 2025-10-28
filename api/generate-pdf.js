@@ -7,7 +7,9 @@ function formatCurrency(value) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// Função helper para gerar o HTML da Autorização
+// ==================================================================
+// HTML E CSS ATUALIZADOS (Usando Flexbox para as assinaturas)
+// ==================================================================
 function getHtmlContent(data) {
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     const imovelValor = formatCurrency(data.imovelValor);
@@ -20,7 +22,7 @@ function getHtmlContent(data) {
             <meta charset="UTF-8">
             <title>Autorização de Venda</title>
             <style>
-                * { font-family: 'Helvetica', 'Arial', sans-serif; }
+                * { font-family: 'Helvetica', 'Arial', sans-serif; box-sizing: border-box; }
                 body { margin: 50px; font-size: 10pt; color: #333; line-height: 1.5; }
                 .header { text-align: center; margin-bottom: 20px; }
                 .header h1 { font-size: 16pt; margin: 0; }
@@ -37,10 +39,28 @@ function getHtmlContent(data) {
                 .data-table .email-width .value { width: calc(100% - 45px); }
                 .clausulas { margin-top: 20px; text-align: justify; }
                 .clausulas p { margin-bottom: 8px; }
-                .assinaturas { margin-top: 50px; text-align: center; }
-                .assinaturas .signature-block { display: inline-block; width: 300px; margin-top: 50px; }
-                .assinaturas .line { border-bottom: 1px solid #000; margin-bottom: 5px; }
-                .assinaturas .label-bold { font-weight: bold; }
+
+                /* CSS CORRIGIDO: Removido 'float' e usando 'flexbox' */
+                .assinaturas {
+                    margin-top: 50px;
+                    text-align: center;
+                }
+                .assinaturas-container {
+                    display: flex;
+                    justify-content: space-around; /* Espaça as assinaturas */
+                    margin-top: 50px;
+                }
+                .signature-block {
+                    width: 300px;
+                    text-align: center;
+                }
+                .assinaturas .line {
+                    border-bottom: 1px solid #000;
+                    margin-bottom: 5px;
+                }
+                .assinaturas .label-bold {
+                    font-weight: bold;
+                }
             </style>
         </head>
         <body>
@@ -111,16 +131,18 @@ function getHtmlContent(data) {
             <div class="assinaturas">
                 <p>Joinville, ${dataHoje}</p>
                 
-                <div class="signature-block" style="float: left; margin-left: 50px;">
-                    <div class="line"></div>
-                    <div class="label-bold">${(data.contratanteNome || 'CONTRATANTE').toUpperCase()}</div>
-                    <div>${data.contratanteCpf || 'CPF/CNPJ'}</div>
-                </div>
+                <div class="assinaturas-container">
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label-bold">${(data.contratanteNome || 'CONTRATANTE').toUpperCase()}</div>
+                        <div>${data.contratanteCpf || 'CPF/CNPJ'}</div>
+                    </div>
 
-                <div class="signature-block" style="float: right; margin-right: 50px;">
-                    <div class="line"></div>
-                    <div class="label-bold">Beehouse Investimentos Imobiliários</div>
-                    <div>CNPJ 14.477.349/0001-23</div>
+                    <div class="signature-block">
+                        <div class="line"></div>
+                        <div class="label-bold">Beehouse Investimentos Imobiliários</div>
+                        <div>CNPJ 14.477.349/0001-23</div>
+                    </div>
                 </div>
             </div>
 
@@ -144,7 +166,7 @@ export default async function handler(req, res) {
         console.log('Iniciando Chromium...');
         browser = await puppeteerCore.launch({
             args: chromium.args,
-            defaultViewport: chromium.defaultViewport, // <-- ADICIONADO PARA ESTABILIDADE
+            defaultViewport: chromium.defaultViewport, 
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
             ignoreHTTPSErrors: true,
@@ -153,12 +175,19 @@ export default async function handler(req, res) {
         console.log('Navegador iniciado. Abrindo nova página...');
         const page = await browser.newPage();
         
+        // ==================================================================
+        // CORREÇÃO 1: Emular o tipo 'screen'
+        // Isso força o Chromium a calcular o CSS (flexbox, etc.)
+        // ==================================================================
+        console.log('Emulando media type "screen"...');
+        await page.emulateMediaType('screen');
+
         console.log('Definindo conteúdo HTML...');
         // ==================================================================
-        // AQUI ESTÁ A CORREÇÃO PRINCIPAL:
-        // Trocado 'networkidle0' (que causa timeout) por 'load'
+        // CORREÇÃO 2: Usar 'domcontentloaded'
+        // É mais confiável que 'load' para HTML local.
         // ==================================================================
-        await page.setContent(htmlContent, { waitUntil: 'load' });
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
         console.log('Gerando buffer do PDF...');
         const pdfBuffer = await page.pdf({
