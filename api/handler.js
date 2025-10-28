@@ -122,7 +122,57 @@ export default async function handler(req, res) {
                         </div>
                     </div>
 
-                    {/* ... Restante do seu formulário HTML ... */}
+                    <div class="form-section">
+                        <h3>IMÓVEL</h3>
+                        <div class="form-grid">
+                             <div class="grid-col-span-3">
+                                <label>Imóvel (Descrição):</label>
+                                <input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol">
+                            </div>
+                            <div class="grid-col-span-3">
+                                <label>Endereço do Imóvel:</label>
+                                <input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
+                            </div>
+                            <div class="grid-col-span-2">
+                                <label>Inscrição Imobiliária/Matrícula:</label>
+                                <input type="text" name="imovelMatricula" placeholder="Nº da matrícula no Registro de Imóveis">
+                            </div>
+                             <div>
+                                <label>Valor do Imóvel (R$):</label>
+                                <input type="number" name="imovelValor" step="0.01" placeholder="500000.00">
+                            </div>
+                            <div class="grid-col-span-2">
+                                <label>Administradora de Condomínio:</label>
+                                <input type="text" name="imovelAdminCondominio" placeholder="Se aplicável">
+                            </div>
+                            <div>
+                                <label>Valor Condomínio (R$):</label>
+                                <input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00">
+                            </div>
+                            <div>
+                                <label>Chamada de Capital:</label>
+                                <input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00 (se houver)">
+                            </div>
+                             <div class="grid-col-span-2">
+                                <label>Nº de parcelas (Chamada Capital):</label>
+                                <input type="number" name="imovelNumParcelas" placeholder="Se aplicável">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>CONTRATO</h3>
+                        <div class="form-grid">
+                            <div>
+                                <label>Prazo de exclusividade (dias):</label>
+                                <input type="number" name="contratoPrazo" value="90" required>
+                            </div>
+                             <div>
+                                <label>Comissão (%):</label>
+                                <input type="number" name="contratoComissaoPct" value="6" step="0.1" required>
+                            </div>
+                        </div>
+                    </div>
 
                     <button type="submit">Gerar PDF</button>
                 </form>
