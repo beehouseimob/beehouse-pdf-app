@@ -84,7 +84,7 @@ async function generatePdfPromise(data) {
             // --- Linha 2: CPF / RG ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('CPF:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteCpf || '', valueXOffset - 40, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteCpf || '', valueXOffset - 45, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('RG nº:', col2_x + 5, y + textYPad);
@@ -94,7 +94,7 @@ async function generatePdfPromise(data) {
             // --- Linha 3: Profissão (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke();
             doc.font('Helvetica-Bold').text('Profissão:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteProfissao || '', valueXOffset - 15, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteProfissao || '', valueXOffset - 20, y + textYPad);
             y += rowHeight;
 
             // --- Linha 4: Estado Civil / Regime ---
@@ -104,19 +104,19 @@ async function generatePdfPromise(data) {
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('Regime de Casamento:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteRegimeCasamento || '', col2_x + 115, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteRegimeCasamento || '', col2_x + 120, y + textYPad);
             y += rowHeight;
 
             // --- Linha 5: Endereço (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke();
             doc.font('Helvetica-Bold').text('Endereço Residencial:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteEndereco || '', valueXOffset + 35, y + textYPad, { width: CONTENT_WIDTH - (valueXOffset + 25) - MARGIN });
+            doc.font('Helvetica').text(data.contratanteEndereco || '', valueXOffset + 40, y + textYPad, { width: CONTENT_WIDTH - (valueXOffset + 25) - MARGIN });
             y += rowHeight;
 
             // --- Linha 6: Telefone / E-mail ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Telefone/Celular:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteTelefone || '', valueXOffset + 5, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteTelefone || '', valueXOffset + 20, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('E-mail:', col2_x + 5, y + textYPad);
@@ -136,7 +136,7 @@ async function generatePdfPromise(data) {
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('Endereço:', col2_x + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelEndereco || '', col2_x + 60, y + textYPad);
+            doc.font('Helvetica').text(data.imovelEndereco || '', col2_x + 50, y + textYPad);
             y += rowHeight;
 
             // --- Linha Imóvel 2: Matrícula / Valor / Adm ---
@@ -153,7 +153,7 @@ async function generatePdfPromise(data) {
             
             doc.rect(col1_x + 2 * cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Adm. Condomínio
             doc.font('Helvetica-Bold').text('Adm. Condomínio:', col1_x + 2 * cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelAdminCondominio || '', col1_x + 2 * cellWidth3Col + 95, y + textYPad);
+            doc.font('Helvetica').text(data.imovelAdminCondominio || '', col1_x + 2 * cellWidth3Col + 100, y + textYPad);
             y += rowHeight;
 
             // --- Linha Imóvel 3: Condomínio / Chamada / Parcelas ---
@@ -163,11 +163,11 @@ async function generatePdfPromise(data) {
 
             doc.rect(col1_x + cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Chamada Capital
             doc.font('Helvetica-Bold').text('Chamada Capital:', col1_x + cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelChamadaCapital || '', col1_x + cellWidth3Col + 90, y + textYPad);
+            doc.font('Helvetica').text(data.imovelChamadaCapital || '', col1_x + cellWidth3Col + 100, y + textYPad);
             
             doc.rect(col1_x + 2 * cellWidth3Col, y, cellWidth3Col, rowHeight).stroke(); // Nº Parcelas
             doc.font('Helvetica-Bold').text('Nº Parcelas:', col1_x + 2 * cellWidth3Col + 5, y + textYPad);
-            doc.font('Helvetica').text(data.imovelNumParcelas || '', col1_x + 2 * cellWidth3Col + 60, y + textYPad);
+            doc.font('Helvetica').text(data.imovelNumParcelas || '', col1_x + 2 * cellWidth3Col + 70, y + textYPad);
             y += rowHeight + 15; // + Espaço extra
 
 
