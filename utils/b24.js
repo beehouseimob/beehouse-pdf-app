@@ -1,5 +1,7 @@
 import { kv } from '@vercel/kv';
 import axios from 'axios';
+// Precisamos disto para formatar os dados corretamente
+import { URLSearchParams } from 'url';
 
 // Pega as chaves do ambiente da Vercel
 const CLIENT_ID = process.env.B24_CLIENT_ID;
@@ -30,21 +32,28 @@ export async function call(method, params = {}) {
     const { access_token, refresh_token, domain } = tokens;
     const url = `https://${domain}/rest/${method}`; // URL correta (sem .json)
 
-    // --- NOVA LÓGICA INTELIGENTE ---
-    // Se o método da API incluir ".get", usamos HTTP GET.
-    // Caso contrário (como .add, .update, .bind), usamos HTTP POST.
-    const isGetMethod = method.toLowerCase().includes('.get');
+    // --- A SOLUÇÃO DEFINITIVA À PROVA DE FALHAS ---
+    // O Bitrix24 espera dados no formato 'application/x-www-form-urlencoded'.
+    // Vamos usar POST para TUDO e formatar o corpo da requisição
+    // usando URLSearchParams. Isso força o axios a usar o Content-Type correto.
     
-    // Para GET, os parâmetros (incluindo auth) vão na query string ('params')
-    // Para POST, os parâmetros (incluindo auth) vão no body (segundo argumento)
     const makeRequest = async (token) => {
-        if (isGetMethod) {
-            return axios.get(url, { params: { ...params, auth: token } });
-        } else {
-            return axios.post(url, { ...params, auth: token });
+        // 1. Cria um corpo de requisição no formato formulário
+        const bodyParams = new URLSearchParams();
+        
+        // 2. Adiciona todos os parâmetros (ex: id: '123')
+        for (const key in params) {
+            bodyParams.append(key, params[key]);
         }
+        
+        // 3. Adiciona o token de autenticação ao corpo
+        bodyParams.append('auth', token);
+        
+        // 4. Faz a chamada POST. O axios vai ver 'bodyParams'
+        //    e automaticamente usar o Content-Type correto.
+        return axios.post(url, bodyParams);
     };
-    // --- FIM DA NOVA LÓGICA ---
+    // --- FIM DA SOLUÇÃO ---
 
     try {
         // 1. Tenta a chamada com o access_token atual
@@ -52,7 +61,7 @@ export async function call(method, params = {}) {
         return response.data;
 
     } catch (error) {
-        // 2. Verifica se o token expirou
+        // 2. Verifica se o token expirou (lógica de 'expired_token' já está correta)
         const errorType = (error.response && error.response.data && error.response.data.error)
             ? error.response.data.error.toLowerCase()
             : '';
@@ -82,7 +91,6 @@ export async function call(method, params = {}) {
             console.log('Token renovado e salvo com sucesso.');
             
             // 5. Tenta a chamada da API novamente com o NOVO token
-            // (Usando a mesma lógica GET/POST)
             const retryResponse = await makeRequest(newTokens.access_token);
             return retryResponse.data;
 
