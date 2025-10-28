@@ -1,7 +1,6 @@
 import { saveTokens, call } from '../utils/b24.js';
 // Importa a lógica do nosso outro arquivo!
-// Precisamos garantir que o caminho esteja correto. 
-// Se 'install.js' e 'handler.js' estão na mesma pasta '/api', isto está correto.
+// Este caminho assume que 'install.js' e 'handler.js' estão na mesma pasta '/api'
 import handler from './handler.js'; 
 
 export default async function (req, res) {

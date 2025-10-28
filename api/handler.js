@@ -12,12 +12,11 @@ export default async function handler(req, res) {
         
         // --- Dados Automáticos (Pré-preenchidos e EDITÁVEIS) ---
         // Você pode buscar qualquer campo.
-        // Lembre-se de trocar 'UF_CRM_XXXXXX' pelo ID real do seu campo de CPF/CNPJ
         
         const proprietarioNome = company.TITLE || '';
         const proprietarioTelefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
         const proprietarioEmail = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
-        const proprietarioCpf = company.UF_CRM_XXXXXX || ''; // <-- TROQUE PELO ID DO SEU CAMPO DE CPF/CNPJ
+        const proprietarioCpf = company.UF_CRM_66C37392C9F3D || ''; // <-- TROQUE PELO ID DO SEU CAMPO DE CPF/CNPJ
 
         // 3. Envia o Formulário HTML como resposta
         res.setHeader('Content-Type', 'text/html');
