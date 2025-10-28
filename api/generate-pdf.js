@@ -1,4 +1,6 @@
-import puppeteer from 'puppeteer';
+// IMPORTA OS PACOTES CORRETOS PARA VERCEL
+import chromium from '@sparticuz/chromium';
+import puppeteerCore from 'puppeteer-core';
 
 // Função helper para formatar R$
 function formatCurrency(value) {
@@ -216,28 +218,24 @@ export default async function handler(req, res) {
         // 1. Gera o HTML com os dados
         const htmlContent = getHtmlContent(data);
 
-        // --- Configuração Padrão do Puppeteer ---
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'] // Args comuns para ambientes de servidor
-        });
-        
-        const chromium = require('@sparticuz/chromium');
-        const puppeteerCore = require('puppeteer-core');
-        
+        // --- Configuração CORRETA PARA VERCEL ---
+        console.log('Iniciando Chromium...');
         browser = await puppeteerCore.launch({
             args: chromium.args,
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
+            ignoreHTTPSErrors: true,
         });
-
+        
+        console.log('Navegador iniciado. Abrindo nova página...');
         const page = await browser.newPage();
         
         // 2. Define o conteúdo da página como o nosso HTML
-        // waitUntil: 'networkidle0' espera todas as fontes e imagens (se houver) carregarem
+        console.log('Definindo conteúdo HTML...');
         await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
 
         // 3. Gera o PDF em memória
+        console.log('Gerando buffer do PDF...');
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true, // Garante que estilos CSS (cores, etc) sejam impressos
@@ -250,19 +248,22 @@ export default async function handler(req, res) {
         });
 
         // 4. Fecha o navegador
+        console.log('Fechando navegador...');
         await browser.close();
         browser = null; // Garante que foi fechado
 
         // 5. Envia o PDF como resposta
+        console.log('Enviando PDF como resposta.');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome || 'Contratante'}.pdf"`);
         res.send(pdfBuffer);
 
     } catch (error) {
-        console.error('Erro ao gerar PDF com Puppeteer:', error);
+        console.error('Erro ao gerar PDF com Puppeteer/Chromium:', error);
         
         // Garante que o navegador feche mesmo em caso de erro
         if (browser) {
+            console.log('Fechando navegador devido a erro...');
             await browser.close();
         }
         
