@@ -1,9 +1,5 @@
 import PDFDocument from 'pdfkit';
 
-// (As funções helper formatCurrency, getHtmlContent, etc. são as mesmas)
-// (Nesta versão, vamos usar a lógica de layout manual do pdfkit, 
-// pois foi a que não deu erro de memória)
-
 // --- HELPERS BÁSICOS ---
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
@@ -47,46 +43,44 @@ const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 
 // ==================================================================
-// FUNÇÃO DE GERAÇÃO DE PDF (AGORA COMO UMA PROMISE)
+// FUNÇÃO DE GERAÇÃO DE PDF (COM PROMISE - JÁ FUNCIONANDO)
 // ==================================================================
 async function generatePdfPromise(data) {
     
-    // Retorna uma nova Promise
     return new Promise((resolve, reject) => {
         
         const doc = new PDFDocument({ margin: MARGIN, size: 'A4' });
         const buffers = [];
 
-        // Registra os listeners
         doc.on('data', buffers.push.bind(buffers));
         doc.on('error', (err) => {
             console.error('Erro no stream do PDFKit:', err);
             reject(err);
         });
         doc.on('end', () => {
-            // Quando o stream 'end' é disparado, o PDF está pronto.
             const pdfData = Buffer.concat(buffers);
             console.log('Stream do PDF finalizado. PDF pronto.');
-            resolve(pdfData); // Resolve a Promise com o buffer
+            resolve(pdfData); 
         });
 
         try {
-            // --- INÍCIO DA LÓGICA DE DESENHO ---
-            // (Esta é a mesma lógica de layout da nossa penúltima tentativa, 
-            // que estava visualmente correta)
+            // ==================================================================
+            // INÍCIO DA LÓGICA DE DESENHO (LAYOUT CORRIGIDO)
+            // ==================================================================
 
             drawHeader(doc);
             
             let y = doc.y;
+            let h1 = 0, h2 = 0, h3 = 0, maxH = 0; // Variáveis de altura
+
+            // --- Posições X do Grid Rígido (3 Colunas) ---
+            const c1_x = MARGIN; // Col 1 Início (50)
+            const c2_x = 265;    // Col 2 Início
+            const c3_x = 430;    // Col 3 Início
 
             // --- 2. Seção CONTRATANTE ---
             drawSectionTitle(doc, 'CONTRATANTE');
             y = doc.y;
-
-            const c1_x = MARGIN; // 50
-            const c2_x = 250;
-            const c3_x = 430;
-            let h1 = 0, h2 = 0, h3 = 0, maxH = 0;
 
             // --- Linha 1: Nome, CPF, RG ---
             const nome_lbl = 40, nome_val = (c2_x - c1_x) - nome_lbl - 10;
@@ -104,7 +98,6 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(data.contratanteCpf || '__________', c2_x + cpf_lbl, y, { width: cpf_val });
             doc.font('Helvetica-Bold').text('RG nº:', c3_x, y, { width: rg_lbl });
             doc.font('Helvetica').text(data.contratanteRg || '__________', c3_x + rg_lbl, y, { width: rg_val });
-            
             y += maxH + 8; 
 
             // --- Linha 2: Profissão, Estado Civil, Regime ---
@@ -123,7 +116,6 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(data.contratanteEstadoCivil || '__________', c2_x + est_lbl, y, { width: est_val });
             doc.font('Helvetica-Bold').text('Regime:', c3_x, y, { width: reg_lbl });
             doc.font('Helvetica').text(data.contratanteRegimeCasamento || '__________', c3_x + reg_lbl, y, { width: reg_val });
-            
             y += maxH + 8;
 
             // --- Linha 3: Endereço (Span all columns) ---
@@ -134,9 +126,9 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(data.contratanteEndereco || '__________', c1_x + end_lbl, y, { width: end_val });
             y += h1 + 8;
 
-            // --- Linha 4: Telefone, E-mail (E-mail spans 2 cols) ---
+            // --- Linha 4: Telefone, E-mail (2 Colunas, 3ª vazia) ---
             const tel_lbl = 50, tel_val = (c2_x - c1_x) - tel_lbl - 10;
-            const email_lbl = 40, email_val = (PAGE_END - c2_x) - email_lbl; 
+            const email_lbl = 40, email_val = (c3_x - c2_x) - email_lbl - 10;
             
             h1 = getHeight(doc, 'Telefone:', data.contratanteTelefone, tel_lbl, tel_val);
             h2 = getHeight(doc, 'E-mail:', data.contratanteEmail, email_lbl, email_val);
@@ -146,7 +138,6 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(data.contratanteTelefone || '__________', c1_x + tel_lbl, y, { width: tel_val });
             doc.font('Helvetica-Bold').text('E-mail:', c2_x, y, { width: email_lbl });
             doc.font('Helvetica').text(data.contratanteEmail || '__________', c2_x + email_lbl, y, { width: email_val });
-
             y += maxH + 15; 
 
             // --- 3. Seção IMÓVEL ---
@@ -154,10 +145,9 @@ async function generatePdfPromise(data) {
             drawSectionTitle(doc, 'IMÓVEL');
             y = doc.y;
 
-            // --- Linha Imóvel 1 (2-column layout) ---
-            const cI_2_x = 330; 
-            const imovel_lbl = 45, imovel_val = (cI_2_x - c1_x) - imovel_lbl - 10; 
-            const endI_lbl = 55, endI_width = (PAGE_END - cI_2_x) - endI_lbl;
+            // --- Linha Imóvel 1 (Imóvel na Col 1, Endereço Col 2 e 3) ---
+            const imovel_lbl = 45, imovel_val = (c2_x - c1_x) - imovel_lbl - 10; 
+            const endI_lbl = 55, endI_width = (PAGE_END - c2_x) - endI_lbl;
             
             h1 = getHeight(doc, 'Imóvel:', data.imovelDescricao, imovel_lbl, imovel_val);
             h2 = getHeight(doc, 'Endereço:', data.imovelEndereco, endI_lbl, endI_width);
@@ -165,9 +155,8 @@ async function generatePdfPromise(data) {
 
             doc.font('Helvetica-Bold').text('Imóvel:', c1_x, y, { width: imovel_lbl });
             doc.font('Helvetica').text(data.imovelDescricao || '__________', c1_x + imovel_lbl, y, { width: imovel_val });
-            doc.font('Helvetica-Bold').text('Endereço:', cI_2_x, y, { width: endI_lbl });
-            doc.font('Helvetica').text(data.imovelEndereco || '__________', cI_2_x + endI_lbl, y, { width: endI_width });
-            
+            doc.font('Helvetica-Bold').text('Endereço:', c2_x, y, { width: endI_lbl });
+            doc.font('Helvetica').text(data.imovelEndereco || '__________', c2_x + endI_lbl, y, { width: endI_width });
             y += maxH + 8;
 
             // --- Linha Imóvel 2 (3-column layout) ---
@@ -186,7 +175,6 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(formatCurrency(data.imovelValor) || '__________', c2_x + val_lbl, y, { width: val_val });
             doc.font('Helvetica-Bold').text('Adm. Condomínio:', c3_x, y, { width: adm_lbl });
             doc.font('Helvetica').text(data.imovelAdminCondominio || '__________', c3_x + adm_lbl, y, { width: adm_val });
-            
             y += maxH + 8;
 
             // --- Linha Imóvel 3 (3-column layout) ---
@@ -205,7 +193,6 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text(data.imovelChamadaCapital || '__________', c2_x + cha_lbl, y, { width: cha_val });
             doc.font('Helvetica-Bold').text('Nº Parcelas:', c3_x, y, { width: parc_lbl });
             doc.font('Helvetica').text(data.imovelNumParcelas || '__________', c3_x + parc_lbl, y, { width: parc_val });
-            
             y += maxH + 15; 
 
             // --- 4. Seção CONTRATO ---
@@ -213,8 +200,9 @@ async function generatePdfPromise(data) {
             drawSectionTitle(doc, 'CONTRATO');
             y = doc.y;
 
-            const prazo_lbl = 70, prazo_val = (cI_2_x - c1_x) - prazo_lbl - 10;
-            const com_lbl = 70, com_val = (PAGE_END - cI_2_x) - com_lbl;
+            // --- Linha Contrato (2 Colunas, 3ª vazia) ---
+            const prazo_lbl = 70, prazo_val = (c2_x - c1_x) - prazo_lbl - 10;
+            const com_lbl = 70, com_val = (c3_x - c2_x) - com_lbl - 10;
 
             h1 = getHeight(doc, 'Prazo (dias):', data.contratoPrazo, prazo_lbl, prazo_val);
             h2 = getHeight(doc, 'Comissão (%):', data.contratoComissaoPct, com_lbl, com_val);
@@ -222,9 +210,8 @@ async function generatePdfPromise(data) {
 
             doc.font('Helvetica-Bold').text('Prazo (dias):', c1_x, y, { width: prazo_lbl });
             doc.font('Helvetica').text(data.contratoPrazo || '__________', c1_x + prazo_lbl, y, { width: prazo_val });
-            doc.font('Helvetica-Bold').text('Comissão (%):', cI_2_x, y, { width: com_lbl });
-            doc.font('Helvetica').text(data.contratoComissaoPct || '__________', cI_2_x + com_lbl, y, { width: com_val });
-
+            doc.font('Helvetica-Bold').text('Comissão (%):', c2_x, y, { width: com_lbl });
+            doc.font('Helvetica').text(data.contratoComissaoPct || '__________', c2_x + com_lbl, y, { width: com_val });
             y += maxH + 15;
 
             // --- 5. Seção CLÁUSULAS ---
@@ -276,12 +263,9 @@ async function generatePdfPromise(data) {
             
             // --- FIM DA LÓGICA DE DESENHO ---
 
-            // 7. Finaliza o PDF
-            // Isso irá disparar o 'end' event
             doc.end();
 
         } catch (error) {
-            // Se houver um erro síncrono no desenho
             console.error('Erro síncrono ao desenhar PDF:', error);
             reject(error);
         }
@@ -290,7 +274,7 @@ async function generatePdfPromise(data) {
 
 
 // ==================================================================
-// HANDLER (AGORA USANDO ASYNC/AWAIT COM A PROMISE)
+// HANDLER (USANDO ASYNC/AWAIT COM A PROMISE - JÁ FUNCIONANDO)
 // ==================================================================
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -301,17 +285,13 @@ export default async function handler(req, res) {
         const data = req.body;
         console.log('Iniciando geração do PDF...');
 
-        // 1. CHAMA A FUNÇÃO E ESPERA (AWAIT) ELA TERMINAR
-        // A função só retorna quando o PDF estiver 100% na memória
         const pdfBuffer = await generatePdfPromise(data);
 
         console.log('PDF pronto. Enviando resposta...');
         
-        // 2. ENVIA A RESPOSTA (AGORA COM O PDF COMPLETO)
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome || 'Contratante'}.pdf"`);
         
-        // Usar res.end() é mais seguro para buffers
         res.end(pdfBuffer);
 
     } catch (error) {
