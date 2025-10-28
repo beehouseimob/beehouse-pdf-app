@@ -197,3 +197,9 @@ export default async function handler(req, res) {
         `);
 
     } catch (error) {
+        console.error('[Handler] Erro detalhado:', error.response?.data || error.details || error.message || error);
+        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido ao processar clique do botão';
+        const errorStatus = error.status || 500;
+        res.status(errorStatus).send(`Erro ao carregar formulário: ${errorMessage}`);
+    }
+}
