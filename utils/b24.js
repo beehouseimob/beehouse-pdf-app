@@ -28,7 +28,7 @@ export async function call(method, params = {}) {
     }
 
     const { access_token, refresh_token, domain } = tokens;
-    const url = `https://${domain}/rest/${method}`; // URL correta (sem .json)
+    const url = 'https://${domain}/rest/${method}'; // URL correta (sem .json)
 
     // --- LÓGICA CORRIGIDA: USAR POST PARA TUDO ---
     const makeRequest = async (token) => {
@@ -52,7 +52,7 @@ export async function call(method, params = {}) {
             console.log('Token expirado. Tentando renovar...');
             
             // 3. Se expirou, pede um novo token
-            const refreshUrl = `https://oauth.bitrix.info/oauth/token/`;
+            const refreshUrl = 'https://oauth.bitrix.info/oauth/token/';
             const refreshResponse = await axios.post(refreshUrl, null, {
                 params: {
                     grant_type: 'refresh_token',

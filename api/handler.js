@@ -48,7 +48,7 @@ export default async function handler(req, res) {
              const proprietarioCpf = '';
              // Continue com o envio do HTML com campos vazios... (código HTML omitido para brevidade)
              res.setHeader('Content-Type', 'text/html');
-             res.send(`<!DOCTYPE html>... Formulário com campos vazios ...</html>`); // Adapte seu HTML
+             res.send('<!DOCTYPE html>... Formulário com campos vazios ...</html>'); // Adapte seu HTML
              return; // Importante sair aqui
         }
 
@@ -184,6 +184,6 @@ export default async function handler(req, res) {
         // Tenta extrair a mensagem específica do erro vindo da função 'call'
         const errorMessage = error.message || 'Erro desconhecido';
         const errorStatus = error.status || 500; // Usa error.status se disponível
-        res.status(errorStatus).send(`Erro ao carregar formulario: ${errorMessage}`);
+        res.status(errorStatus).send('Erro ao carregar formulario: ${errorMessage}');
     }
 }

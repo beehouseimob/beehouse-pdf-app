@@ -47,7 +47,7 @@ export default async function (req, res) {
         // Agora, o HANDLER do botão é o PRÓPRIO /api/install.
         // Quando o botão for clicado, ele chamará este mesmo script.
         // O roteador no topo do script vai pegá-lo.
-        const selfUrl = `https://${req.headers.host}/api/install`;
+        const selfUrl = 'https://${req.headers.host}/api/install';
         
         console.log('Limpando botões antigos...');
         try {
