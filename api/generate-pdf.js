@@ -1,3 +1,5 @@
+import puppeteer from 'puppeteer';
+
 // Função helper para formatar R$
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
