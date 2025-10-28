@@ -2,7 +2,7 @@ import PDFDocument from 'pdfkit';
 
 // --- CONSTANTES DE LAYOUT ---
 const MARGIN = 50;
-const PAGE_WIDTH = 612; // A4 em pontos (8.27in * 72pt/in)
+const PAGE_WIDTH = 612; // A4 em pontos
 const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // Largura útil
 
 // --- HELPERS ---
@@ -21,92 +21,52 @@ function drawHeader(doc) {
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', { align: 'center' });
     doc.moveDown(1.5);
     doc.fontSize(14).font('Helvetica-Bold').text('AUTORIZAÇÃO DE VENDA', { align: 'center' });
-    doc.moveDown(2); // Mais espaço
+    doc.moveDown(2);
 }
 
-// Função helper para desenhar um Título de Seção (COM A CORREÇÃO do NaN)
+// Função helper para desenhar um Título de Seção (Corrigido)
 function drawSectionTitle(doc, title) {
-    const y = doc.y;
-    // Usa a forma explícita (x, y) para evitar o erro NaN
-    doc.fontSize(11).font('Helvetica-Bold').text(title, MARGIN, y, { 
+    // Define o Y explicitamente para evitar o erro NaN
+    doc.fontSize(11).font('Helvetica-Bold').text(title, MARGIN, doc.y, { 
         underline: true,
         width: CONTENT_WIDTH,
         align: 'left'
     });
     doc.moveDown(0.7); 
-    doc.fontSize(10); // Reseta o tamanho para os campos
+    doc.fontSize(10); // Reseta o tamanho
 }
 
 /**
- * [HELPER] Desenha uma linha com múltiplos campos (colunas).
- * Calcula a altura máxima entre todos os campos da linha antes de desenhar.
+ * [NOVA ABORDAGEM - HELPER SIMPLES E ESTATICO]
+ * Desenha um Label e um Valor em coordenadas X, Y específicas.
+ * Não modifica o doc.y. Apenas desenha e retorna a altura do campo.
  */
-function drawRow(doc, fields) {
-    const startY = doc.y;
-    let currentX = doc.x; // Usa o doc.x atual (deve ser MARGIN)
-    let maxHeight = 0;
-
-    // 1. Calcular a altura máxima da linha
-    for (const field of fields) {
-        const { label, value, labelWidth = 60, colWidth = 150 } = field;
-        const val = value || '__________';
-        const valueWidth = colWidth - labelWidth;
-
-        const labelH = doc.font('Helvetica-Bold').heightOfString(label, { width: labelWidth });
-        const valueH = doc.font('Helvetica').heightOfString(val, { width: valueWidth });
-        maxHeight = Math.max(maxHeight, labelH, valueH);
-    }
-
-    // 2. Desenhar todos os campos alinhados por 'startY'
-    for (const field of fields) {
-        const { label, value, labelWidth = 60, colWidth = 150 } = field;
-        const val = value || '__________';
-        const valueWidth = colWidth - labelWidth;
-        
-        doc.font('Helvetica-Bold').text(label, currentX, startY, { 
-            width: labelWidth, 
-            lineBreak: false 
-        });
-        
-        doc.font('Helvetica').text(val, currentX + labelWidth, startY, { 
-            width: valueWidth 
-        });
-
-        currentX += colWidth;
-    }
-
-    // 3. Mover o cursor Y
-    doc.y = startY + maxHeight + 8; // +8 de padding
-}
-
-/**
- * [HELPER] Desenha um único campo que ocupa a largura total.
- */
-function drawField(doc, label, value, options = {}) {
-    const { labelWidth = 60 } = options;
-    const startY = doc.y;
-    const startX = doc.x; // Usa o doc.x atual (deve ser MARGIN)
+function drawFieldAt(doc, label, value, x, y, { labelWidth, valueWidth }) {
     const val = value || '__________';
     
-    const valueWidth = CONTENT_WIDTH - labelWidth;
+    // Garante que o valor não seja nulo/undefined (causa erros no pdfkit)
+    const safeLabel = label || '';
+    const safeValue = val ? String(val) : '__________';
 
-    doc.font('Helvetica-Bold').text(label, startX, startY, { 
+    // Desenha Label
+    doc.font('Helvetica-Bold').text(safeLabel, x, y, { 
         width: labelWidth, 
         lineBreak: false 
     });
     
-    doc.font('Helvetica').text(val, startX + labelWidth, startY, { 
+    // Desenha Valor
+    doc.font('Helvetica').text(safeValue, x + labelWidth, y, { 
         width: valueWidth 
     });
 
-    const labelH = doc.heightOfString(label, { width: labelWidth });
-    const valueH = doc.heightOfString(val, { width: valueWidth });
-    
-    doc.y = startY + Math.max(labelH, valueH) + 8; // +8 de padding
+    // Calcula a altura real
+    const labelH = doc.heightOfString(safeLabel, { width: labelWidth });
+    const valueH = doc.heightOfString(safeValue, { width: valueWidth });
+    return Math.max(labelH, valueH);
 }
 
 
-// --- HANDLER PRINCIPAL ---
+// --- HANDLER PRINCIPAL (COM ORQUESTRAÇÃO MANUAL) ---
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -129,95 +89,118 @@ export default async function handler(req, res) {
         // --- 1. Cabeçalho ---
         drawHeader(doc);
         
-        // Seta o X inicial para o conteúdo fluir
-        doc.x = MARGIN; 
+        // Ponto de partida vertical
+        let y = doc.y;
 
-        // --- 2. Seção CONTRATANTE (Layout como o do PDF [cite: 5]) ---
+        // --- 2. Seção CONTRATANTE ---
         drawSectionTitle(doc, 'CONTRATANTE');
+        y = doc.y; // Pega o Y *depois* do título
+
+        // --- Layout Manual da Seção CONTRATANTE ---
+        // (Baseado na mistura dos forms e das imagens)
+
+        // Posições X das colunas
+        const c1_x = MARGIN;
+        const c2_x = 270;
+        const c3_x = 420;
+
+        // --- Linha 1: Nome, CPF, RG ---
+        let val1_w = (c2_x - c1_x) - 40; // Largura Valor 1 (Label: 40)
+        let val2_w = (c3_x - c2_x) - 30; // Largura Valor 2 (Label: 30)
+        let val3_w = (CONTENT_WIDTH - (c3_x - MARGIN)) - 40; // Largura Valor 3 (Label: 40)
+
+        let h1 = drawFieldAt(doc, 'Nome:', data.contratanteNome, c1_x, y, { labelWidth: 40, valueWidth: val1_w });
+        let h2 = drawFieldAt(doc, 'CPF:', data.contratanteCpf, c2_x, y, { labelWidth: 30, valueWidth: val2_w });
+        let h3 = drawFieldAt(doc, 'RG nº:', data.contratanteRg, c3_x, y, { labelWidth: 40, valueWidth: val3_w });
         
-        const col3_1 = (CONTENT_WIDTH * 0.45); // 45%
-        const col3_2 = (CONTENT_WIDTH * 0.30); // 30%
-        const col3_3 = (CONTENT_WIDTH * 0.25); // 25%
+        y += Math.max(h1, h2, h3) + 8; // Move o Y para a próxima linha
+
+        // --- Linha 2: Profissão, Estado Civil, Regime ---
+        let val4_w = (c2_x - c1_x) - 55; // (Label: 55)
+        let val5_w = (c3_x - c2_x) - 65; // (Label: 65)
+        let val6_w = (CONTENT_WIDTH - (c3_x - MARGIN)) - 45; // (Label: 45)
         
-        const col2_1 = (CONTENT_WIDTH * 0.4);  // 40%
-        const col2_2 = (CONTENT_WIDTH * 0.6);  // 60%
-
-        // --- Linha 1 (Nome, CPF, RG) ---
-        drawRow(doc, [
-            { label: 'Nome:', value: data.contratanteNome, labelWidth: 40, colWidth: col3_1 },
-            { label: 'CPF:', value: data.contratanteCpf, labelWidth: 30, colWidth: col3_2 },
-            { label: 'RG nº:', value: data.contratanteRg, labelWidth: 40, colWidth: col3_3 }
-        ]);
-
-        // --- Linha 2 (Profissão, Estado Civil, Regime) ---
-        drawRow(doc, [
-            { label: 'Profissão:', value: data.contratanteProfissao, labelWidth: 55, colWidth: col3_1 },
-            { label: 'Estado Civil:', value: data.contratanteEstadoCivil, labelWidth: 65, colWidth: col3_2 },
-            { label: 'Regime:', value: data.contratanteRegimeCasamento, labelWidth: 45, colWidth: col3_3 }
-        ]);
-
-        // --- Linha 3 (Endereço) ---
-        drawField(doc, 'Endereço:', data.contratanteEndereco, { labelWidth: 60 });
+        let h4 = drawFieldAt(doc, 'Profissão:', data.contratanteProfissao, c1_x, y, { labelWidth: 55, valueWidth: val4_w });
+        let h5 = drawFieldAt(doc, 'Estado Civil:', data.contratanteEstadoCivil, c2_x, y, { labelWidth: 65, valueWidth: val5_w });
+        let h6 = drawFieldAt(doc, 'Regime:', data.contratanteRegimeCasamento, c3_x, y, { labelWidth: 45, valueWidth: val6_w });
         
-        // --- Linha 4 (Telefone, E-mail) ---
-        drawRow(doc, [
-            { label: 'Telefone:', value: data.contratanteTelefone, labelWidth: 50, colWidth: col2_1 },
-            { label: 'E-mail:', value: data.contratanteEmail, labelWidth: 40, colWidth: col2_2 }
-        ]);
+        y += Math.max(h4, h5, h6) + 8; // Move o Y
 
-        doc.moveDown(1.5); // Espaço extra
+        // --- Linha 3: Endereço (Campo único) ---
+        let h7 = drawFieldAt(doc, 'Endereço:', data.contratanteEndereco, MARGIN, y, { labelWidth: 60, valueWidth: CONTENT_WIDTH - 60 });
+        y += h7 + 8;
+        
+        // --- Linha 4: Telefone, E-mail ---
+        let val7_w = (c2_x - c1_x) - 50; // (Label: 50)
+        let val8_w = (CONTENT_WIDTH - (c2_x - MARGIN)) - 40; // (Label: 40)
 
-        // ==================================================================
-        // SEÇÃO IMÓVEL ATUALIZADA (Baseada no layout da imagem/PDF [cite: 6, 7, 8, 9, 10, 11, 12, 13])
-        // ==================================================================
+        let h8 = drawFieldAt(doc, 'Telefone:', data.contratanteTelefone, c1_x, y, { labelWidth: 50, valueWidth: val7_w });
+        let h9 = drawFieldAt(doc, 'E-mail:', data.contratanteEmail, c2_x, y, { labelWidth: 40, valueWidth: val8_w });
+        
+        y += Math.max(h8, h9) + 15; // Move o Y e dá espaço extra
+
+
+        // --- 3. Seção IMÓVEL ---
         drawSectionTitle(doc, 'IMÓVEL');
+        y = doc.y; // Pega o Y *depois* do título
 
-        // --- Linha Imóvel 1 (Imóvel, Endereço)  ---
-        const colImovel_2_1 = (CONTENT_WIDTH * 0.5); // 50%
-        const colImovel_2_2 = (CONTENT_WIDTH * 0.5); // 50%
-        drawRow(doc, [
-            { label: 'Imóvel:', value: data.imovelDescricao, labelWidth: 45, colWidth: colImovel_2_1 },
-            { label: 'Endereço:', value: data.imovelEndereco, labelWidth: 55, colWidth: colImovel_2_2 }
-        ]);
+        // --- Layout Manual da Seção IMÓVEL ---
+        // (Baseado na image_9723ef.png e form)
         
-        // --- Linha Imóvel 2 (Matrícula, Valor, Adm. Condomínio)  ---
-        const colImovel_3_1 = (CONTENT_WIDTH * 0.45); // 45%
-        const colImovel_3_2 = (CONTENT_WIDTH * 0.25); // 25%
-        const colImovel_3_3 = (CONTENT_WIDTH * 0.30); // 30%
-        
-        drawRow(doc, [
-            { label: 'Matrícula:', value: data.imovelMatricula, labelWidth: 55, colWidth: colImovel_3_1 },
-            { label: 'Valor:', value: formatCurrency(data.imovelValor), labelWidth: 35, colWidth: colImovel_3_2 },
-            { label: 'Adm. Condomínio:', value: data.imovelAdminCondominio, labelWidth: 95, colWidth: colImovel_3_3 }
-        ]);
+        const cI1_x = MARGIN;
+        const cI2_x = 330; // 50/50ish
 
-        // --- Linha Imóvel 3 (Condomínio, Chamada Capital, Nº Parcelas) [cite: 11, 12, 13] ---
-        drawRow(doc, [
-            { label: 'Condomínio:', value: formatCurrency(data.imovelValorCondominio), labelWidth: 65, colWidth: colImovel_3_1 }, // Reusa 45%
-            { label: 'Chamada Capital:', value: data.imovelChamadaCapital, labelWidth: 95, colWidth: colImovel_3_2 }, // Reusa 25%
-            { label: 'Nº Parcelas:', value: data.imovelNumParcelas, labelWidth: 65, colWidth: colImovel_3_3 } // Reusa 30%
-        ]);
-
-        doc.moveDown(1.5);
+        // --- Linha Imóvel 1: Imóvel, Endereço ---
+        let valI1_w = (cI2_x - cI1_x) - 45; // (Label: 45)
+        let valI2_w = (CONTENT_WIDTH - (cI2_x - MARGIN)) - 55; // (Label: 55)
         
-        // ==================================================================
-        // NOVA SEÇÃO - CONTRATO (Dados do handler.js)
-        // ==================================================================
+        let hI1 = drawFieldAt(doc, 'Imóvel:', data.imovelDescricao, cI1_x, y, { labelWidth: 45, valueWidth: valI1_w });
+        let hI2 = drawFieldAt(doc, 'Endereço:', data.imovelEndereco, cI2_x, y, { labelWidth: 55, valueWidth: valI2_w });
+        y += Math.max(hI1, hI2) + 8;
+
+        // --- Linha Imóvel 2: Matrícula, Valor, Adm. Condomínio ---
+        // (Layout da primeira imagem, pois a segunda é incompleta)
+        const cI3_x = 270;
+        const cI4_x = 420;
+        
+        let valI3_w = (cI3_x - cI1_x) - 55; // (Label: 55)
+        let valI4_w = (cI4_x - cI3_x) - 35; // (Label: 35)
+        let valI5_w = (CONTENT_WIDTH - (cI4_x - MARGIN)) - 95; // (Label: 95)
+
+        let hI3 = drawFieldAt(doc, 'Matrícula:', data.imovelMatricula, cI1_x, y, { labelWidth: 55, valueWidth: valI3_w });
+        let hI4 = drawFieldAt(doc, 'Valor:', formatCurrency(data.imovelValor), cI3_x, y, { labelWidth: 35, valueWidth: valI4_w });
+        let hI5 = drawFieldAt(doc, 'Adm. Condomínio:', data.imovelAdminCondominio, cI4_x, y, { labelWidth: 95, valueWidth: valI5_w });
+        y += Math.max(hI3, hI4, hI5) + 8;
+        
+        // --- Linha Imóvel 3: Condomínio, Chamada, Parcelas ---
+        let valI6_w = (cI3_x - cI1_x) - 65; // (Label: 65)
+        let valI7_w = (cI4_x - cI3_x) - 95; // (Label: 95)
+        let valI8_w = (CONTENT_WIDTH - (cI4_x - MARGIN)) - 65; // (Label: 65)
+
+        let hI6 = drawFieldAt(doc, 'Condomínio:', formatCurrency(data.imovelValorCondominio), cI1_x, y, { labelWidth: 65, valueWidth: valI6_w });
+        let hI7 = drawFieldAt(doc, 'Chamada Capital:', data.imovelChamadaCapital, cI3_x, y, { labelWidth: 95, valueWidth: valI7_w });
+        let hI8 = drawFieldAt(doc, 'Nº Parcelas:', data.imovelNumParcelas, cI4_x, y, { labelWidth: 65, valueWidth: valI8_w });
+        y += Math.max(hI6, hI7, hI8) + 15; // Move e dá espaço
+
+
+        // --- 4. Seção CONTRATO ---
         drawSectionTitle(doc, 'CONTRATO');
-        
-        const colContrato_1 = (CONTENT_WIDTH * 0.5);
-        const colContrato_2 = (CONTENT_WIDTH * 0.5);
+        y = doc.y; // Pega o Y *depois* do título
 
-        drawRow(doc, [
-            { label: 'Prazo (dias):', value: data.contratoPrazo, labelWidth: 70, colWidth: colContrato_1 },
-            { label: 'Comissão (%):', value: data.contratoComissaoPct, labelWidth: 70, colWidth: colContrato_2 }
-        ]);
+        // --- Linha Contrato 1: Prazo, Comissão ---
+        let valK1_w = (cI2_x - cI1_x) - 70; // (Label: 70)
+        let valK2_w = (CONTENT_WIDTH - (cI2_x - MARGIN)) - 70; // (Label: 70)
         
-        doc.moveDown(1.5);
+        let hK1 = drawFieldAt(doc, 'Prazo (dias):', data.contratoPrazo, cI1_x, y, { labelWidth: 70, valueWidth: valK1_w });
+        let hK2 = drawFieldAt(doc, 'Comissão (%):', data.contratoComissaoPct, cI2_x, y, { labelWidth: 70, valueWidth: valK2_w });
+        y += Math.max(hK1, hK2) + 15; // Move e dá espaço
 
-        // --- 5. Seção CLÁUSULAS (Layout já era fluido, está OK) ---
+
+        // --- 5. Seção CLÁUSULAS ---
+        // Seta o Y final para as cláusulas fluírem
+        doc.y = y;
+        doc.x = MARGIN; // Reseta o X para o texto justificado
         doc.font('Helvetica').fontSize(10);
-        doc.x = MARGIN; // Garante que o texto justificado comece na margem
         
         const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob n° 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
         doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
@@ -247,7 +230,7 @@ export default async function handler(req, res) {
         doc.text(textoFechamento, { align: 'justify', width: CONTENT_WIDTH });
         doc.moveDown(2);
 
-        // --- 6. Assinaturas (Layout já era fluido, está OK) ---
+        // --- 6. Assinaturas ---
         const dataHoje = new Date().toLocaleDateString('pt-BR');
         doc.text(`Joinville, ${dataHoje}`, { align: 'center', width: CONTENT_WIDTH });
         doc.moveDown(3);
