@@ -78,7 +78,7 @@ async function generatePdfPromise(data) {
             // --- Linha 1: Nome (span 2 colunas) ---
             doc.rect(col1_x, y, CONTENT_WIDTH, rowHeight).stroke(); // Caixa da linha
             doc.font('Helvetica-Bold').text('Nome:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteNome || '', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteNome || '', valueXOffset - 25, y + textYPad);
             y += rowHeight;
 
             // --- Linha 2: CPF / RG ---
