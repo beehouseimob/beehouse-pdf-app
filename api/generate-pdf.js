@@ -1,13 +1,13 @@
 import chromium from '@sparticuz/chromium';
 import puppeteerCore from 'puppeteer-core';
 
-// (A função formatCurrency permanece a mesma)
+// (Função formatCurrency - sem alterações)
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// (A função getHtmlContent permanece a mesma que a da última vez, com flexbox)
+// (Função getHtmlContent - sem alterações, usando flexbox)
 function getHtmlContent(data) {
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     const imovelValor = formatCurrency(data.imovelValor);
@@ -124,7 +124,6 @@ function getHtmlContent(data) {
                     </div>
                 </div>
             </div>
-
         </body>
         </html>
     `;
@@ -142,32 +141,31 @@ export default async function handler(req, res) {
         const data = req.body;
         const htmlContent = getHtmlContent(data);
 
+        // Usar headless: true (explícito) é mais estável
+        // A Vercel ignora o 'headless: false' do chromium.args
+        chromium.headless = true; 
+
         console.log('Iniciando Chromium...');
         browser = await puppeteerCore.launch({
             args: chromium.args,
             defaultViewport: chromium.defaultViewport, 
             executablePath: await chromium.executablePath(),
-            headless: chromium.headless,
+            headless: chromium.headless, // Usando o 'true' definido acima
             ignoreHTTPSErrors: true,
         });
         
         console.log('Navegador iniciado. Abrindo nova página...');
         const page = await browser.newPage();
         
-        // Emular 'screen' ainda é uma boa prática
+        // Emular 'screen' ainda é importante para o CSS (flexbox)
         await page.emulateMediaType('screen');
 
-        console.log('Navegando para o Data URL...');
-        // ==================================================================
-        // AQUI ESTÁ A MUDANÇA CRÍTICA
-        // Trocamos setContent por goto(data URL)
-        // E voltamos a usar 'networkidle0'
-        // ==================================================================
-        await page.goto(`data:text/html;charset=UTF-8,${encodeURIComponent(htmlContent)}`, {
-            waitUntil: 'networkidle0'
-        });
+        console.log('Definindo conteúdo HTML...');
+        // Voltamos ao setContent com 'domcontentloaded'
+        // É a forma mais rápida e confiável para HTML local
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
 
-        console.log('Página carregada e "idle". Gerando buffer do PDF...');
+        console.log('Gerando buffer do PDF...');
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
