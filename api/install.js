@@ -11,11 +11,12 @@ export default async function handler(req, res) {
     console.log('[Install] Requisição recebida...');
     console.log('[Install] Query Params:', req.query);
     console.log('[Install] Body Params:', req.body);
-
-    const params = { ...req.query, ...req.body };
-    const domain = params.DOMAIN || params.domain;
+ 
+    // Unifica parâmetros de query e body, dando prioridade ao body.
+    const params = { ...req.query, ...req.body }; 
+    const domain = params.domain || params.DOMAIN;
     const memberId = params.member_id || params.MEMBER_ID;
-
+ 
     // --- PRIORIDADE 1: Fluxo de App Local (AUTH_ID no body) ---
     if (params.AUTH_ID && memberId && domain) {
         console.log('[Install] Detectado fluxo de App Local (AUTH_ID e member_id presentes).');
@@ -36,8 +37,8 @@ export default async function handler(req, res) {
             await saveTokens(tokens); // Salva usando member_id como chave
             console.log('[Install Local App] Tokens salvos com sucesso.');
 
-            // Registra/atualiza o botão (placement)
-            const handlerUrl = `https://${req.headers.host}/api/handler`;
+            // Registra/atualiza o botão (placement), apontando para si mesmo
+            const handlerUrl = `https://${req.headers.host}/api/install`;
             await registerPlacement(handlerUrl, tokens); // Passa os tokens para autenticar a chamada
 
             console.log('[Install Local App] Instalação/Atualização concluída.');
@@ -85,7 +86,7 @@ export default async function handler(req, res) {
             await saveTokens(tokens); // Salva usando member_id como chave
             console.log('[Install OAuth] Tokens salvos com sucesso para member_id:', tokens.member_id);
 
-            const handlerUrl = `https://${req.headers.host}/api/handler`;
+            const handlerUrl = `https://${req.headers.host}/api/install`; // Aponta para si mesmo
             await registerPlacement(handlerUrl, tokens); // Passa os tokens para autenticar a chamada
 
             console.log('[Install OAuth] Instalação concluída.');
@@ -151,4 +152,3 @@ async function registerPlacement(handlerUrl, tokens) {
     }, tokens); 
     console.log('[Install Register] Botão registrado com sucesso.');
 }
-
