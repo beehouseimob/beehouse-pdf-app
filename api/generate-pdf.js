@@ -1,4 +1,3 @@
-// IMPORTA OS PACOTES CORRETOS PARA VERCEL
 import chromium from '@sparticuz/chromium';
 import puppeteerCore from 'puppeteer-core';
 
@@ -11,12 +10,9 @@ function formatCurrency(value) {
 // Função helper para gerar o HTML da Autorização
 function getHtmlContent(data) {
     const dataHoje = new Date().toLocaleDateString('pt-BR');
-
-    // Formata os valores monetários antes de injetar no HTML
     const imovelValor = formatCurrency(data.imovelValor);
     const imovelValorCondominio = formatCurrency(data.imovelValorCondominio);
 
-    // Usa || '__________' para preencher campos vazios
     return `
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -24,98 +20,27 @@ function getHtmlContent(data) {
             <meta charset="UTF-8">
             <title>Autorização de Venda</title>
             <style>
-                /* Reseta a fonte padrão que o Puppeteer pode usar */
-                * {
-                    font-family: 'Helvetica', 'Arial', sans-serif;
-                }
-                
-                body {
-                    margin: 50px;
-                    font-size: 10pt;
-                    color: #333;
-                    line-height: 1.5;
-                }
-
-                .header {
-                    text-align: center;
-                    margin-bottom: 20px;
-                }
-                .header h1 {
-                    font-size: 16pt;
-                    margin: 0;
-                }
-                .header p {
-                    font-size: 10pt;
-                    margin: 2px 0;
-                }
-
-                .section-title {
-                    font-size: 11pt;
-                    font-weight: bold;
-                    text-decoration: underline;
-                    margin-top: 25px;
-                    margin-bottom: 10px;
-                }
-
-                /* Tabela de blocos (layout principal) */
-                .data-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    margin-bottom: 15px;
-                }
-                .data-table td {
-                    padding: 4px;
-                    vertical-align: top;
-                }
-                .data-table label {
-                    font-weight: bold;
-                    margin-right: 5px;
-                }
-                .data-table .value {
-                    border-bottom: 1px solid #ccc;
-                    min-width: 100px;
-                    display: inline-block;
-                    line-height: 1.2;
-                }
-
-                /* Ajustes de largura das colunas */
+                * { font-family: 'Helvetica', 'Arial', sans-serif; }
+                body { margin: 50px; font-size: 10pt; color: #333; line-height: 1.5; }
+                .header { text-align: center; margin-bottom: 20px; }
+                .header h1 { font-size: 16pt; margin: 0; }
+                .header p { font-size: 10pt; margin: 2px 0; }
+                .section-title { font-size: 11pt; font-weight: bold; text-decoration: underline; margin-top: 25px; margin-bottom: 10px; }
+                .data-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                .data-table td { padding: 4px; vertical-align: top; }
+                .data-table label { font-weight: bold; margin-right: 5px; }
+                .data-table .value { border-bottom: 1px solid #ccc; min-width: 100px; display: inline-block; line-height: 1.2; }
                 .data-table .col1 { width: 33.3%; }
                 .data-table .col2 { width: 33.3%; }
                 .data-table .col3 { width: 33.3%; }
-
-                /* Para campos de linha inteira */
-                .data-table .full-width .value {
-                    width: calc(100% - 70px); /* 100% - largura do label */
-                }
-                .data-table .email-width .value {
-                     width: calc(100% - 45px); /* 100% - largura do label 'E-mail:' */
-                }
-
-                .clausulas {
-                    margin-top: 20px;
-                    text-align: justify;
-                }
-                .clausulas p {
-                    margin-bottom: 8px;
-                }
-
-                .assinaturas {
-                    margin-top: 50px;
-                    text-align: center;
-                }
-                .assinaturas .signature-block {
-                    display: inline-block;
-                    width: 300px;
-                    margin-top: 50px;
-                }
-                .assinaturas .line {
-                    border-bottom: 1px solid #000;
-                    margin-bottom: 5px;
-                }
-                .assinaturas .label-bold {
-                    font-weight: bold;
-                }
-
+                .data-table .full-width .value { width: calc(100% - 70px); }
+                .data-table .email-width .value { width: calc(100% - 45px); }
+                .clausulas { margin-top: 20px; text-align: justify; }
+                .clausulas p { margin-bottom: 8px; }
+                .assinaturas { margin-top: 50px; text-align: center; }
+                .assinaturas .signature-block { display: inline-block; width: 300px; margin-top: 50px; }
+                .assinaturas .line { border-bottom: 1px solid #000; margin-bottom: 5px; }
+                .assinaturas .label-bold { font-weight: bold; }
             </style>
         </head>
         <body>
@@ -214,14 +139,12 @@ export default async function handler(req, res) {
 
     try {
         const data = req.body;
-        
-        // 1. Gera o HTML com os dados
         const htmlContent = getHtmlContent(data);
 
-        // --- Configuração CORRETA PARA VERCEL ---
         console.log('Iniciando Chromium...');
         browser = await puppeteerCore.launch({
             args: chromium.args,
+            defaultViewport: chromium.defaultViewport, // <-- ADICIONADO PARA ESTABILIDADE
             executablePath: await chromium.executablePath(),
             headless: chromium.headless,
             ignoreHTTPSErrors: true,
@@ -230,15 +153,17 @@ export default async function handler(req, res) {
         console.log('Navegador iniciado. Abrindo nova página...');
         const page = await browser.newPage();
         
-        // 2. Define o conteúdo da página como o nosso HTML
         console.log('Definindo conteúdo HTML...');
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+        // ==================================================================
+        // AQUI ESTÁ A CORREÇÃO PRINCIPAL:
+        // Trocado 'networkidle0' (que causa timeout) por 'load'
+        // ==================================================================
+        await page.setContent(htmlContent, { waitUntil: 'load' });
 
-        // 3. Gera o PDF em memória
         console.log('Gerando buffer do PDF...');
         const pdfBuffer = await page.pdf({
             format: 'A4',
-            printBackground: true, // Garante que estilos CSS (cores, etc) sejam impressos
+            printBackground: true,
             margin: {
                 top: '50px',
                 right: '50px',
@@ -247,12 +172,10 @@ export default async function handler(req, res) {
             }
         });
 
-        // 4. Fecha o navegador
         console.log('Fechando navegador...');
         await browser.close();
-        browser = null; // Garante que foi fechado
+        browser = null;
 
-        // 5. Envia o PDF como resposta
         console.log('Enviando PDF como resposta.');
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome || 'Contratante'}.pdf"`);
@@ -260,13 +183,10 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('Erro ao gerar PDF com Puppeteer/Chromium:', error);
-        
-        // Garante que o navegador feche mesmo em caso de erro
         if (browser) {
             console.log('Fechando navegador devido a erro...');
             await browser.close();
         }
-        
         res.status(500).send('Erro ao gerar PDF: ' + error.message);
     }
 }
