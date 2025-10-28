@@ -1,15 +1,13 @@
 import chromium from '@sparticuz/chromium';
 import puppeteerCore from 'puppeteer-core';
 
-// Função helper para formatar R$
+// (A função formatCurrency permanece a mesma)
 function formatCurrency(value) {
     if (!value || isNaN(value)) return 'N/A';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// ==================================================================
-// HTML E CSS ATUALIZADOS (Usando Flexbox para as assinaturas)
-// ==================================================================
+// (A função getHtmlContent permanece a mesma que a da última vez, com flexbox)
 function getHtmlContent(data) {
     const dataHoje = new Date().toLocaleDateString('pt-BR');
     const imovelValor = formatCurrency(data.imovelValor);
@@ -39,28 +37,11 @@ function getHtmlContent(data) {
                 .data-table .email-width .value { width: calc(100% - 45px); }
                 .clausulas { margin-top: 20px; text-align: justify; }
                 .clausulas p { margin-bottom: 8px; }
-
-                /* CSS CORRIGIDO: Removido 'float' e usando 'flexbox' */
-                .assinaturas {
-                    margin-top: 50px;
-                    text-align: center;
-                }
-                .assinaturas-container {
-                    display: flex;
-                    justify-content: space-around; /* Espaça as assinaturas */
-                    margin-top: 50px;
-                }
-                .signature-block {
-                    width: 300px;
-                    text-align: center;
-                }
-                .assinaturas .line {
-                    border-bottom: 1px solid #000;
-                    margin-bottom: 5px;
-                }
-                .assinaturas .label-bold {
-                    font-weight: bold;
-                }
+                .assinaturas { margin-top: 50px; text-align: center; }
+                .assinaturas-container { display: flex; justify-content: space-around; margin-top: 50px; }
+                .signature-block { width: 300px; text-align: center; }
+                .assinaturas .line { border-bottom: 1px solid #000; margin-bottom: 5px; }
+                .assinaturas .label-bold { font-weight: bold; }
             </style>
         </head>
         <body>
@@ -130,14 +111,12 @@ function getHtmlContent(data) {
 
             <div class="assinaturas">
                 <p>Joinville, ${dataHoje}</p>
-                
                 <div class="assinaturas-container">
                     <div class="signature-block">
                         <div class="line"></div>
                         <div class="label-bold">${(data.contratanteNome || 'CONTRATANTE').toUpperCase()}</div>
                         <div>${data.contratanteCpf || 'CPF/CNPJ'}</div>
                     </div>
-
                     <div class="signature-block">
                         <div class="line"></div>
                         <div class="label-bold">Beehouse Investimentos Imobiliários</div>
@@ -175,21 +154,20 @@ export default async function handler(req, res) {
         console.log('Navegador iniciado. Abrindo nova página...');
         const page = await browser.newPage();
         
-        // ==================================================================
-        // CORREÇÃO 1: Emular o tipo 'screen'
-        // Isso força o Chromium a calcular o CSS (flexbox, etc.)
-        // ==================================================================
-        console.log('Emulando media type "screen"...');
+        // Emular 'screen' ainda é uma boa prática
         await page.emulateMediaType('screen');
 
-        console.log('Definindo conteúdo HTML...');
+        console.log('Navegando para o Data URL...');
         // ==================================================================
-        // CORREÇÃO 2: Usar 'domcontentloaded'
-        // É mais confiável que 'load' para HTML local.
+        // AQUI ESTÁ A MUDANÇA CRÍTICA
+        // Trocamos setContent por goto(data URL)
+        // E voltamos a usar 'networkidle0'
         // ==================================================================
-        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+        await page.goto(`data:text/html;charset=UTF-8,${encodeURIComponent(htmlContent)}`, {
+            waitUntil: 'networkidle0'
+        });
 
-        console.log('Gerando buffer do PDF...');
+        console.log('Página carregada e "idle". Gerando buffer do PDF...');
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
