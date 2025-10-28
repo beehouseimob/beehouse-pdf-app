@@ -1,77 +1,104 @@
-import { saveTokens, call } from '../utils/b24.js';
-// Importa a lógica do nosso outro arquivo!
-// Este caminho assume que 'install.js' e 'handler.js' estão na mesma pasta '/api'
-import handler from './handler.js'; 
+// /api/install.js
+import axios from 'axios';
+import { saveTokens, call } from '../utils/b24.js'; // Funções do seu b24.js
 
-export default async function (req, res) {
-    
-    // Combina todos os parâmetros de GET e POST
-    const params = { ...req.query, ...req.body };
+// Pega credenciais do ambiente Vercel
+const CLIENT_ID = process.env.B24_CLIENT_ID;
+const CLIENT_SECRET = process.env.B24_CLIENT_SECRET;
 
-    // --- ROTEADOR INTELIGENTE ---
-    // VERIFICA SE É UM CLIQUE DE BOTÃO (PLACEMENT)
-    // O Bitrix24 envia 'PLACEMENT_OPTIONS' quando um botão é clicado
-    if (params.PLACEMENT_OPTIONS) {
-        console.log('DETECTADO CLIQUE DE BOTÃO. Redirecionando para o handler...');
-        // Se for um clique de botão, executa a lógica do handler
-        // e passa 'req' e 'res' para ele.
-        return handler(req, res);
-    }
+export default async function handler(req, res) {
+    console.log('[Install] Iniciando processo de instalação...');
+    console.log('[Install] Query Params recebidos:', req.query);
 
-    // --- LÓGICA DE INSTALAÇÃO ---
-    // Se não for um clique de botão, deve ser uma instalação.
-    // Procura por AUTH_ID e DOMAIN.
-    console.log('NÃO É CLIQUE DE BOTÃO. Tentando instalar...');
-    const AUTH_ID = params.AUTH_ID;
-    const REFRESH_ID = params.REFRESH_ID;
-    const domain = params.DOMAIN;
-
-    if (!AUTH_ID || !domain) {
-        const errorMsg = "Erro: Parametros de instalacao (AUTH_ID, DOMAIN) nao recebidos.";
-        console.error(errorMsg, params); 
+    // Verifica se temos os parâmetros OBRIGATÓRIOS do fluxo OAuth2
+    if (!req.query.code || !req.query.domain || !req.query.member_id) {
+        const errorMsg = 'Erro: Parâmetros de instalação OAuth (code, domain, member_id) não recebidos ou incompletos.';
+        console.error(errorMsg, req.query);
         return res.status(400).send(errorMsg);
     }
 
-    // Se chegou aqui, é uma instalação válida.
     try {
-        console.log('Instalação válida. Salvando tokens...');
-        const tokens = {
-            access_token: AUTH_ID,
-            refresh_token: REFRESH_ID,
-            domain: domain 
+        // 1. Troca o código de autorização (code) por tokens de acesso/atualização
+        const tokenUrl = `https://${req.query.domain}/oauth/token/`;
+        const tokenParams = {
+            grant_type: 'authorization_code',
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            code: req.query.code
         };
-        await saveTokens(tokens);
-        console.log('Tokens salvos.');
 
-        // *** MUDANÇA CRÍTICA ***
-        // Agora, o HANDLER do botão é o PRÓPRIO /api/install.
-        // Quando o botão for clicado, ele chamará este mesmo script.
-        // O roteador no topo do script vai pegá-lo.
-        const selfUrl = 'https://${req.headers.host}/api/install';
-        
-        console.log('Limpando botões antigos...');
-        try {
-            await call('placement.unbind', {
-                PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
-                HANDLER: selfUrl
-            });
-        } catch (unbindError) {
-            console.log("Limpeza (unbind) concluída.");
+        console.log(`[Install] Solicitando tokens de: ${tokenUrl}`);
+        // Usa POST para /oauth/token/, passando params como URLSearchParams ou no corpo x-www-form-urlencoded
+        // Axios pode fazer isso automaticamente se passado como 'data' e com header correto,
+        // mas usar params com POST também costuma funcionar com Bitrix.
+        const response = await axios.post(tokenUrl, null, { params: tokenParams });
+        console.log('[Install] Tokens recebidos:', response.data);
+
+        // Estrutura esperada da resposta do Bitrix24
+        const tokenData = response.data;
+        const tokens = {
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            // Calcula o timestamp UNIX absoluto de expiração
+            expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in,
+            domain: tokenData.domain,
+            member_id: tokenData.member_id // Essencial para salvar/recuperar tokens corretamente
+        };
+
+        // Validação básica
+        if (!tokens.access_token || !tokens.refresh_token || !tokens.domain || !tokens.member_id) {
+            console.error('[Install] Dados de token inválidos recebidos:', tokenData);
+            throw new Error('Falha ao receber dados de token válidos do Bitrix24.');
         }
-        
-        console.log('Registrando novo botão apontando para:', selfUrl);
-        await call('placement.bind', {
-            PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
-            HANDLER: selfUrl,
-            TITLE: 'Gerar Autorização PDF',
-            DESCRIPTION: 'Gera PDF de autorização de vendas'
-        });
-        console.log('Botão registrado com sucesso.');
 
-        res.send('<head><script>top.BX.closeApplication();</script></head><body>Instalado com sucesso!</body>');
+        // 2. Salva os tokens usando a função do b24.js (que usa Vercel KV com member_id como chave)
+        await saveTokens(tokens);
+        console.log('[Install] Tokens salvos com sucesso para member_id:', tokens.member_id);
+
+        // 3. Registra (ou atualiza) o botão (placement)
+        // A URL do handler do botão deve ser o endpoint /api/handler
+        const handlerUrl = `https://${req.headers.host}/api/handler`; // *** Aponta para /api/handler ***
+
+        await registerPlacement(handlerUrl, tokens); // Passa a URL e os tokens para autenticar
+
+        // 4. Responde ao Bitrix24 para fechar a janela
+        console.log('[Install] Instalação concluída. Enviando resposta para fechar janela.');
+        res.setHeader('Content-Type', 'text/html');
+        res.send('<head><script>top.BX.closeApplication();</script></head><body>Instalado com sucesso! Feche esta janela.</body>');
 
     } catch (error) {
-        console.error('ERRO DURANTE A EXECUCAO DA INSTALACAO:', error); 
-        res.status(500).send('Erro durante a instalacao: ' + error.message);
+        console.error('[Install] ERRO DURANTE A INSTALAÇÃO:', error.response?.data || error.message || error);
+        const errorMessage = error.response?.data?.error_description || error.message || 'Erro desconhecido';
+        res.status(500).send(`Erro durante a instalação: ${errorMessage}`);
     }
+}
+
+// Função auxiliar para registrar/atualizar o placement
+async function registerPlacement(handlerUrl, tokens) {
+    console.log('[Install Register] Limpando botões antigos (se existirem) que apontam para:', handlerUrl);
+    try {
+        // Tenta remover qualquer botão anterior no mesmo local apontando para a mesma URL
+        await call('placement.unbind', {
+            PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR',
+            HANDLER: handlerUrl // URL que o botão vai chamar
+        }, tokens); // Usa os tokens obtidos para autenticar esta chamada
+        console.log('[Install Register] Unbind (limpeza) concluído ou não necessário.');
+    } catch (unbindError) {
+        // É comum dar erro 'PLACEMENT_HANDLER_NOT_FOUND' se o handler não existia antes. Ignora apenas esse.
+        if (unbindError.details?.code !== 'PLACEMENT_HANDLER_NOT_FOUND' && unbindError.details?.error !== 'PLACEMENT_HANDLER_NOT_FOUND') {
+           console.warn("[Install Register] Erro durante o unbind (pode ser ignorado se for 'NOT_FOUND'):", unbindError.message, unbindError.details);
+        } else {
+           console.log("[Install Register] Handler antigo não encontrado ou já removido, continuando...");
+        }
+    }
+
+    console.log('[Install Register] Registrando novo botão apontando para:', handlerUrl);
+    // Registra o botão
+    await call('placement.bind', {
+        PLACEMENT: 'CRM_COMPANY_DETAIL_TOOLBAR', // Local onde o botão aparece
+        HANDLER: handlerUrl, // URL que será chamada ao clicar
+        TITLE: 'Gerar Autorização PDF', // Texto do botão
+        DESCRIPTION: 'Gera PDF de autorização de vendas' // Descrição (opcional)
+    }, tokens); // Usa os tokens obtidos para autenticar esta chamada
+    console.log('[Install Register] Botão registrado com sucesso.');
 }
