@@ -28,7 +28,7 @@ export async function call(method, params = {}) {
     }
 
     const { access_token, refresh_token, domain } = tokens;
-    const url = 'https://${domain}/rest/${method}'; // URL correta (sem .json)
+    const url = `https://${domain}/rest/${method}`; // URL correta (sem .json)
 
     // --- LÓGICA CORRIGIDA: USAR POST PARA TUDO ---
     const makeRequest = async (token) => {
