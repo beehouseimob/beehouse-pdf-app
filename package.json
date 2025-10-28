@@ -4,10 +4,8 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sparticuz/chromium": "^141.0.0",
     "@vercel/kv": "^1.0.1",
     "axios": "^1.6.8",
-    "pdfkit": "^0.15.0",
-    "puppeteer-core": "^24.26.1"
+    "pdfkit": "^0.15.0"
   }
 }
