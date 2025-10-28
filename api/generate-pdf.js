@@ -7,14 +7,12 @@ function formatCurrency(value) {
 }
 
 function drawHeader(doc) {
-    // Cabeçalho (Baseado em aut.-de-vendas-beehouse-rafael_setembro.pdf)
-    [cite_start]// Nota: O logo 'beehouse' [cite: 2] não foi adicionado pois não foi fornecido como imagem.
     doc.fontSize(16).font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN, { align: 'center' });
     doc.moveDown(0.5);
-    [cite_start]doc.fontSize(10).font('Helvetica').text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', { align: 'center' })[cite: 5];
-    [cite_start]doc.text('www.beehouse.sc | Fone: (47) 99287-9066', { align: 'center' })[cite: 6];
+    doc.fontSize(10).font('Helvetica').text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', { align: 'center' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', { align: 'center' });
     doc.moveDown(1.5);
-    [cite_start]doc.fontSize(14).font('Helvetica-Bold').text('AUTORIZAÇÃO DE VENDA', { align: 'center' })[cite: 4];
+    doc.fontSize(14).font('Helvetica-Bold').text('AUTORIZAÇÃO DE VENDA', { align: 'center' });
     doc.moveDown(2);
 }
 
@@ -75,7 +73,7 @@ async function generatePdfPromise(data) {
             const col2_x = MARGIN + (CONTENT_WIDTH / 2); // Divide a página em 2
             
             // --- 2. Seção CONTRATANTE ---
-            [cite_start]drawSectionTitle(doc, 'CONTRATANTE')[cite: 1];
+            drawSectionTitle(doc, 'CONTRATANTE');
             y = doc.y;
 
             // --- Linha 1: Nome (span 2 colunas) ---
@@ -140,7 +138,7 @@ async function generatePdfPromise(data) {
 
             // --- 3. Seção IMÓVEL ---
             doc.y = y;
-            [cite_start]drawSectionTitle(doc, 'IMÓVEL')[cite: 7];
+            drawSectionTitle(doc, 'IMÓVEL');
             y = doc.y;
 
             // --- Linha Imóvel 1: Imóvel / Endereço ---
@@ -161,7 +159,7 @@ async function generatePdfPromise(data) {
             const colI3_3_x = MARGIN + 350;  // Col 3 (Mais espaço para Valor)
             const widthCol1 = colI3_2_x - colI3_1_x; // ~210
             const widthCol2 = colI3_3_x - colI3_2_x; // ~140
-            const widthCol3 = PAGE_END - colI3_3_x;  // ~172
+            const widthCol3 = PAGE_END - colI3_3_x;  // ~162 (PAGE_END é 562)
 
             doc.rect(colI3_1_x, y, widthCol1, rowHeight).stroke(); // Matrícula
             doc.font('Helvetica-Bold').text('Matrícula:', colI3_1_x + labelPad, y + textYPad);
@@ -220,15 +218,18 @@ async function generatePdfPromise(data) {
             doc.x = MARGIN; 
             doc.font('Helvetica').fontSize(10);
             
-            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob n° 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
+            // (Baseado em aut.-de-vendas-beehouse-rafael_setembro.pdf)
+            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários inscrita no CNPJ sob nº 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223-SL 801 Bairro Atiradores, Cep: 89.203-070-Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
             doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(1);
             
-            const clausula1 = `1º A venda é concebida a contar desta data pelo prazo de ${data.contratoPrazo || '____'} dias. Após esse período, o contrato permanece por prazo indeterminado ou até manifestação por escrito por quaisquer das partes, pelo menos 15 (quinze) dias anteriores à intenção de cancelamento, observando-se ainda o artigo 726 do Código Civil Vigente.`;
+            // Cláusula 1 (do PDF mais novo)
+            const clausula1 = `1º A venda é concebida a contar desta data pelo prazo de ${data.contratoPrazo || '____'} dias. Após esse período o contrato se encerra.`;
             doc.text(clausula1, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(0.5);
 
-            const clausula2 = `2º O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '____'}% sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro.`;
+            // Cláusula 2 (do PDF mais novo)
+            const clausula2 = `2º O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`;
             doc.text(clausula2, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(0.5);
             
@@ -240,7 +241,7 @@ async function generatePdfPromise(data) {
             doc.text(clausula4, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(0.5);
             
-            const clausula5 = '5º Em caso de qualquer controvérsia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.';
+            const clausula5 = '5º Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.';
             doc.text(clausula5, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(1);
 
@@ -250,7 +251,7 @@ async function generatePdfPromise(data) {
 
             // --- 6. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR');
-            [cite_start]doc.text(`Joinville, ${dataHoje}`, { align: 'center', width: CONTENT_WIDTH })[cite: 28]; [cite_start]// Format similar to [cite: 28]
+            doc.text(`Joinville, ${dataHoje}`, { align: 'center', width: CONTENT_WIDTH });
             doc.moveDown(3);
 
             doc.text('________________________________________', { align: 'center', width: CONTENT_WIDTH });
@@ -259,8 +260,8 @@ async function generatePdfPromise(data) {
             
             doc.moveDown(3);
             doc.text('________________________________________', { align: 'center', width: CONTENT_WIDTH });
-            [cite_start]doc.font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center', width: CONTENT_WIDTH })[cite: 29];
-            [cite_start]doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center', width: CONTENT_WIDTH })[cite: 30];
+            doc.font('Helvetica-Bold').text('Beehouse Investimentos Imobiliários', { align: 'center', width: CONTENT_WIDTH });
+            doc.font('Helvetica').text('CNPJ 14.477.349/0001-23', { align: 'center', width: CONTENT_WIDTH });
             
             // --- FIM DA LÓGICA DE DESENHO ---
 
