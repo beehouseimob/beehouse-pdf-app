@@ -116,7 +116,7 @@ async function generatePdfPromise(data) {
             // --- Linha 6: Telefone / E-mail ---
             doc.rect(col1_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 1
             doc.font('Helvetica-Bold').text('Telefone/Celular:', labelX, y + textYPad);
-            doc.font('Helvetica').text(data.contratanteTelefone || '', valueXOffset, y + textYPad);
+            doc.font('Helvetica').text(data.contratanteTelefone || '', valueXOffset + 25, y + textYPad);
             
             doc.rect(col2_x, y, CONTENT_WIDTH / 2, rowHeight).stroke(); // Caixa 2
             doc.font('Helvetica-Bold').text('E-mail:', col2_x + 5, y + textYPad);
