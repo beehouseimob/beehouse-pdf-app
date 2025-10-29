@@ -17,9 +17,7 @@ const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 // NOVA FUNÇÃO DE HEADER (Baseada em image_a53028.png)
 // ==================================================================
 function drawHeader(doc) {
-    // NOTA: O logo 'beehouse' não foi adicionado pois não tenho o arquivo de imagem.
-    // Se você tiver o logo, pode adicioná-lo aqui com:
-    // doc.image('caminho/para/logo.png', MARGIN, MARGIN, { width: 50 });
+    doc.image('images/Logo.png', MARGIN, MARGIN, { width: 50 });
     
     // Título da Empresa (ao lado de onde o logo estaria)
     doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', MARGIN + 60, MARGIN + 10);
@@ -303,13 +301,12 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
-            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).text(`Local e data: Joinville, ${dataHoje}`, MARGIN, doc.y);
             doc.moveDown(3);
 
             const sigY = doc.y;
-            const sigLeftX = MARGIN + 40;
-            const sigRightX = MARGIN + 300;
+            const sigLeftX = MARGIN;
+            const sigRightX = MARGIN + 250;
             const sigWidth = 220;
 
             // Assinatura Esquerda (Beehouse)
