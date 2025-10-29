@@ -28,8 +28,8 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath); 
 
         // 1. Bloco da Esquerda (Logo + Nome)
-        // O logo em 'image_a53028.png' é pequeno. Usando 60.
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 60 }); 
+        // O logo em 'image_a53028.png' é pequeno. Usando 180.
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 180 }); 
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
@@ -287,7 +287,7 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { indent: 0 });
             doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
             doc.moveDown(3);
 
