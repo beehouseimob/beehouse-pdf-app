@@ -263,17 +263,17 @@ async function generatePdfPromise(data) {
             const yCheck = yIRow + textYPad;
             const checkSize = 8;
             
-            doc.rect(xSim - 10, yCheck + 5, checkSize, checkSize).stroke(); // Caixa SIM
+            doc.rect(xSim, yCheck, checkSize, checkSize).stroke(); // Caixa SIM
             doc.font('Helvetica').fontSize(8).text('SIM', xSim + checkSize + 2, yIRow + textYPad);
-            doc.rect(xNao - 10, yCheck + 5, checkSize, checkSize).stroke(); // Caixa NÃO
+            doc.rect(xNao, yCheck, checkSize, checkSize).stroke(); // Caixa NÃO
             doc.font('Helvetica').fontSize(8).text('NÃO', xNao + checkSize + 2, yIRow + textYPad);
 
             // Desenha o "X"
             doc.font('Helvetica-Bold').fontSize(10); // Fonte maior para o X
             if (temExclusividade) {
-                doc.text('X', xSim + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' }); 
+                doc.text('X', xSim, yCheck, { width: checkSize, height: checkSize, align: 'center' }); 
             } else {
-                doc.text('X', xNao + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' });
+                doc.text('X', xNao, yCheck, { width: checkSize, height: checkSize, align: 'center' });
             }
             doc.fontSize(8); // Volta ao normal
             
