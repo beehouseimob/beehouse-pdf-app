@@ -1,6 +1,5 @@
 // /api/install.js
 import axios from 'axios';
-// Importa as funções do seu utils/b24.js
 import { saveTokens, call, getFreshTokens } from '../utils/b24.js';
 
 // Use as variáveis de ambiente corretas (verifique seu .env na Vercel)
@@ -8,41 +7,47 @@ const CLIENT_ID = process.env.B24_CLIENT_ID || process.env.B_CLIENT_ID;
 const CLIENT_SECRET = process.env.B24_CLIENT_SECRET || process.env.B_CLIENT_SECRET;
 
 export default async function handler(req, res) {
-    // Unifica query e body
     const params = { ...req.query, ...req.body };
     console.log('[Install/Router] Requisição recebida...');
     console.log('[Install/Router] Query Params:', req.query);
     console.log('[Install/Router] Body Params:', req.body);
 
     const domain = params.domain || params.DOMAIN;
-    // Garante que member_id seja pego de qualquer fonte
     const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id || req?.query?.member_id; 
     const placement = params.PLACEMENT;
     const authId = params.AUTH_ID;
     const code = params.code;
     const appSid = req.query.APP_SID;
-    const authType = req.query.type; // Parâmetro para fluxo pós-seleção
+    const authType = req.query.type; 
 
-    // --- ROTEAMENTO MAIS ROBUSTO ---
+    // --- ROTEAMENTO COM PRIORIDADE CORRIGIDA ---
 
-    // PRIORIDADE 1: Fluxo de App Local (AUTH_ID é a chave)
-    if (authId && memberId && domain) {
-        console.log('[Install] Detectado fluxo de App Local (AUTH_ID presente).');
-        await handleLocalInstall(req, res, params); 
-    }
-    // PRIORIDADE 2: Fluxo OAuth (code é a chave, sem AUTH_ID)
-    else if (code && domain && memberId && !authId) {
-        console.log('[Install] Detectado fluxo OAuth (code presente).');
-        await handleOAuthInstall(req, res, params);
-    }
-    // PRIORIDADE 3: Clique no Botão (PLACEMENT específico, SEM AUTH_ID e SEM code)
-    else if (placement && placement === 'CRM_COMPANY_DETAIL_TOOLBAR' && !authId && !code) {
+    // PRIORIDADE 1: Clique no Botão (Placement Específico)
+    // Esta verificação DEVE vir antes da verificação do AUTH_ID
+    if (placement && placement === 'CRM_COMPANY_DETAIL_TOOLBAR') {
         console.log('[Router] Detectado clique no botão CRM_COMPANY_DETAIL_TOOLBAR.');
         if (!memberId) {
              console.error('[Router] member_id não encontrado para clique de botão.');
              return res.status(400).send('Erro: Identificação do membro ausente.');
         }
         await handlePlacementClick(req, res); // Mostra tela de seleção
+    }
+    // PRIORIDADE 2: Fluxo de App Local (AUTH_ID presente, mas NÃO é o clique do botão)
+    else if (authId && memberId && domain) {
+        console.log('[Install] Detectado fluxo de App Local (AUTH_ID presente). Placement:', placement);
+        // Só executa a instalação se o placement for 'DEFAULT' ou ausente
+        if (!placement || placement === 'DEFAULT') {
+             await handleLocalInstall(req, res, params); 
+        } else {
+             // Caso inesperado: AUTH_ID com um placement desconhecido.
+             console.warn(`[Install] AUTH_ID recebido com PLACEMENT inesperado: ${placement}. Ignorando.`);
+             res.status(200).send('Recebido (AUTH_ID com placement não padrão)');
+        }
+    }
+    // PRIORIDADE 3: Fluxo OAuth (code presente, sem AUTH_ID e sem clique de botão)
+    else if (code && domain && memberId && !authId && placement !== 'CRM_COMPANY_DETAIL_TOOLBAR') {
+        console.log('[Install] Detectado fluxo OAuth (code presente).');
+        await handleOAuthInstall(req, res, params);
     }
     // PRIORIDADE 4: Requisição Pós-Seleção (parâmetro 'type', SEM PLACEMENT)
     else if (authType && memberId && !placement && !authId && !code) {
@@ -57,7 +62,8 @@ export default async function handler(req, res) {
     // FLUXO NÃO RECONHECIDO
     else {
         console.warn('[Install] Parâmetros não correspondem a OAuth, App Local, Clique de Botão, Pós-Seleção ou Verificação Inicial.', params);
-        res.status(400).send('Tipo de requisição não reconhecida.');
+        // É importante responder 200 OK para algumas chamadas do Bitrix24
+        res.status(200).send('Tipo de requisição não processada ou já tratada.'); 
     }
 }
 
@@ -89,7 +95,13 @@ async function handleLocalInstall(req, res, params) {
 
         console.log('[Install Local App] Instalação/Atualização concluída.');
         res.setHeader('Content-Type', 'text/html');
-        res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
+        // Envia script para fechar SOMENTE se for instalação inicial (DEFAULT)
+        if (params.PLACEMENT === 'DEFAULT') {
+            res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
+        } else {
+             // Se chegou aqui sem ser DEFAULT (talvez uma atualização manual), só confirma.
+             res.send('Atualização Local Processada.');
+        }
 
     } catch (error) {
         console.error('[Install Local App] ERRO:', error.response?.data || error.details || error.message || error);
@@ -194,6 +206,7 @@ async function handlePlacementClick(req, res) {
         // Exibe a tela de SELEÇÃO, passando companyId e member_id
         console.log('[Handler] Exibindo tela de seleção.');
         res.setHeader('Content-Type', 'text/html');
+        // Chama a função que gera o HTML da tela de seleção
         res.send(getSelectionHtml(companyId, authTokens.member_id)); 
 
     } catch (error) {
