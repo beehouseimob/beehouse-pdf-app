@@ -16,7 +16,7 @@ const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 // ==================================================================
-// FUNÇÃO DE HEADER CORRIGIDA (Logo menor e mais espaço abaixo)
+// FUNÇÃO DE HEADER CORRIGIDA (Balanceada e com Logo)
 // ==================================================================
 function drawHeader(doc) {
     try {
@@ -27,27 +27,26 @@ function drawHeader(doc) {
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg'); 
         console.log('Tentando carregar logo de:', logoPath); 
 
-        // ==================================================
-        // ALTERAÇÃO 1: Logo reduzido de 200 para 80
-        // ==================================================
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80, valign: 'top' }); 
+        // 1. Bloco da Esquerda (Logo + Nome)
+        // O logo em 'image_a53028.png' é pequeno. Usando 60.
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 60 }); 
+        doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN + 70, MARGIN + 10);
+
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
          // Fallback se o logo falhar
+         doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
     }
-        
-        
-    // Bloco de Endereço (Alinhado à Direita) - Sem alterações
+    
+    // 3. Bloco da Direita (Endereço) - como no seu código
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
     doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
     doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
-    // ==================================================
-    // ALTERAÇÃO 2: Aumentado o espaço de 50 para 65
-    // ==================================================
-    doc.y = MARGIN + 65; // Posição Y fixa após o header
+    // Posição Y fixa após o header (com MAIS ESPAÇO)
+    doc.y = MARGIN + 65; 
 }
 
 
