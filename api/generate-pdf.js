@@ -42,8 +42,8 @@ function drawHeader(doc) {
     const rightAlignX = PAGE_WIDTH - MARGIN - 250;
     doc.font('Helvetica-Bold').fontSize(12).text('AUTORIZAÇÃO DE VENDA', rightAlignX, MARGIN, { width: 250, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
-    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN, { width: 250, align: 'right' });
-    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
+    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
     doc.moveDown(5); // Move o cursor para baixo do header
 }
@@ -110,8 +110,8 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(9).text(data.contratanteNome || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
             
             // Usando RG no campo CNH nº do layout
-            doc.font('Helvetica-Bold').fontSize(9).text('CNH nº:', xC_2 + textPad, yRow + textYPad); 
-            labelWidth = doc.widthOfString('CNH nº:');
+            doc.font('Helvetica-Bold').fontSize(9).text('RG nº:', xC_2 + textPad, yRow + textYPad); 
+            labelWidth = doc.widthOfString('RG nº:');
             doc.font('Helvetica').fontSize(9).text(data.contratanteRg || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad); 
 
             doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xC_3 + textPad, yRow + textYPad);
