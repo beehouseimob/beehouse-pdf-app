@@ -258,14 +258,14 @@ async function generatePdfPromise(data) {
             // Lógica do Checkbox
             const prazoNum = parseInt(data.contratoPrazo, 10);
             const temExclusividade = !isNaN(prazoNum) && prazoNum > 0;
-            const xSim = xI_1 + 85;
-            const xNao = xI_1 + 125;
-            const yCheck = yIRow + textYPad + 2;
+            const xSim = xI_1 + 90;
+            const xNao = xI_1 + 130;
+            const yCheck = yIRow + textYPad;
             const checkSize = 8;
             
-            doc.rect(xSim, yCheck, checkSize, checkSize).stroke(); // Caixa SIM
+            doc.rect(xSim - 10, yCheck + 5, checkSize, checkSize).stroke(); // Caixa SIM
             doc.font('Helvetica').fontSize(8).text('SIM', xSim + checkSize + 2, yIRow + textYPad);
-            doc.rect(xNao, yCheck, checkSize, checkSize).stroke(); // Caixa NÃO
+            doc.rect(xNao - 10, yCheck + 5, checkSize, checkSize).stroke(); // Caixa NÃO
             doc.font('Helvetica').fontSize(8).text('NÃO', xNao + checkSize + 2, yIRow + textYPad);
 
             // Desenha o "X"
