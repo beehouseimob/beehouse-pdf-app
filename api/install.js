@@ -1,24 +1,27 @@
 // /api/install.js
 import axios from 'axios';
+// Importa as funções do seu utils/b24.js
 import { saveTokens, call, getFreshTokens } from '../utils/b24.js';
 
 // Use as variáveis de ambiente corretas (verifique seu .env na Vercel)
-const CLIENT_ID = process.env.B24_CLIENT_ID || process.env.B_CLIENT_ID; 
+const CLIENT_ID = process.env.B24_CLIENT_ID || process.env.B_CLIENT_ID;
 const CLIENT_SECRET = process.env.B24_CLIENT_SECRET || process.env.B_CLIENT_SECRET;
 
 export default async function handler(req, res) {
+    // Unifica query e body
     const params = { ...req.query, ...req.body };
     console.log('[Install/Router] Requisição recebida...');
     console.log('[Install/Router] Query Params:', req.query);
     console.log('[Install/Router] Body Params:', req.body);
 
     const domain = params.domain || params.DOMAIN;
-    const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id || req?.query?.member_id; 
+    // Garante que member_id seja pego de qualquer fonte
+    const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id || req?.query?.member_id;
     const placement = params.PLACEMENT;
     const authId = params.AUTH_ID;
     const code = params.code;
     const appSid = req.query.APP_SID;
-    const authType = req.query.type; 
+    const authType = req.query.type; // Parâmetro para fluxo pós-seleção
 
     // --- ROTEAMENTO COM PRIORIDADE CORRIGIDA ---
 
@@ -37,7 +40,7 @@ export default async function handler(req, res) {
         console.log('[Install] Detectado fluxo de App Local (AUTH_ID presente). Placement:', placement);
         // Só executa a instalação se o placement for 'DEFAULT' ou ausente
         if (!placement || placement === 'DEFAULT') {
-             await handleLocalInstall(req, res, params); 
+             await handleLocalInstall(req, res, params);
         } else {
              // Caso inesperado: AUTH_ID com um placement desconhecido.
              console.warn(`[Install] AUTH_ID recebido com PLACEMENT inesperado: ${placement}. Ignorando.`);
@@ -63,7 +66,7 @@ export default async function handler(req, res) {
     else {
         console.warn('[Install] Parâmetros não correspondem a OAuth, App Local, Clique de Botão, Pós-Seleção ou Verificação Inicial.', params);
         // É importante responder 200 OK para algumas chamadas do Bitrix24
-        res.status(200).send('Tipo de requisição não processada ou já tratada.'); 
+        res.status(200).send('Tipo de requisição não processada ou já tratada.');
     }
 }
 
@@ -80,17 +83,17 @@ async function handleLocalInstall(req, res, params) {
             refresh_token: params.REFRESH_ID,
             expires_in: params.AUTH_EXPIRES ? Math.floor(Date.now() / 1000) + parseInt(params.AUTH_EXPIRES, 10) : Math.floor(Date.now() / 1000) + 3600,
             domain: domain,
-            member_id: memberId 
+            member_id: memberId
         };
 
         if (!tokens.access_token) throw new Error('access_token ausente no fluxo de App Local.');
         if (!tokens.member_id) throw new Error('member_id ausente no fluxo de App Local.');
-       
+
         console.log('[Install Local App] Salvando tokens para member_id:', tokens.member_id);
-        await saveTokens(tokens); 
+        await saveTokens(tokens);
         console.log('[Install Local App] Tokens salvos com sucesso.');
 
-        const handlerUrl = `https://${req.headers.host}/api/install`; 
+        const handlerUrl = `https://${req.headers.host}/api/install`;
         await registerPlacement(handlerUrl, tokens);
 
         console.log('[Install Local App] Instalação/Atualização concluída.');
@@ -134,7 +137,7 @@ async function handleOAuthInstall(req, res, params) {
             const tokens = {
                 access_token: tokenData.access_token,
                 refresh_token: tokenData.refresh_token,
-                expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in, 
+                expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in,
                 domain: tokenData.domain,
                 member_id: tokenData.member_id
             };
@@ -146,8 +149,8 @@ async function handleOAuthInstall(req, res, params) {
             await saveTokens(tokens);
             console.log('[Install OAuth] Tokens salvos para member_id:', tokens.member_id);
 
-            const handlerUrl = `https://${req.headers.host}/api/install`; 
-            await registerPlacement(handlerUrl, tokens); 
+            const handlerUrl = `https://${req.headers.host}/api/install`;
+            await registerPlacement(handlerUrl, tokens);
 
             console.log('[Install OAuth] Instalação concluída.');
             res.setHeader('Content-Type', 'text/html');
@@ -164,21 +167,21 @@ async function handleOAuthInstall(req, res, params) {
 // ==================================================================
 async function handlePlacementClick(req, res) {
     console.log('[Handler] Clique de botão (CRM_COMPANY_DETAIL_TOOLBAR) iniciado.');
-    
+
     // Precisamos garantir member_id para getFreshTokens e para construir URLs
     const memberId = req?.body?.member_id || req?.body?.auth?.member_id || req?.query?.member_id;
     if (!memberId) {
         console.error('[Handler] member_id não encontrado na requisição do placement.');
         return res.status(400).send('Erro: Identificação do membro ausente.');
     }
-    
-    const simulatedReqForTokens = { 
-        body: req.body, 
-        query: { ...req.query, member_id: memberId } 
+
+    const simulatedReqForTokens = {
+        body: req.body,
+        query: { ...req.query, member_id: memberId }
     };
 
     try {
-        const authTokens = await getFreshTokens(simulatedReqForTokens); 
+        const authTokens = await getFreshTokens(simulatedReqForTokens);
 
         if (!authTokens) {
             console.error('[Handler] Falha ao obter/renovar tokens de autenticação.');
@@ -190,7 +193,7 @@ async function handlePlacementClick(req, res) {
         if (req.body.PLACEMENT_OPTIONS) {
             try {
                 const placementOptions = JSON.parse(req.body.PLACEMENT_OPTIONS);
-                companyId = placementOptions.ID; 
+                companyId = placementOptions.ID;
                 console.log('[Handler] ID da Empresa extraído de PLACEMENT_OPTIONS:', companyId);
             } catch (parseError) {
                 console.error("[Handler] Erro ao parsear PLACEMENT_OPTIONS:", parseError);
@@ -207,7 +210,7 @@ async function handlePlacementClick(req, res) {
         console.log('[Handler] Exibindo tela de seleção.');
         res.setHeader('Content-Type', 'text/html');
         // Chama a função que gera o HTML da tela de seleção
-        res.send(getSelectionHtml(companyId, authTokens.member_id)); 
+        res.send(getSelectionHtml(companyId, authTokens.member_id));
 
     } catch (error) {
         console.error('[Handler] Erro detalhado no handlePlacementClick:', error.response?.data || error.details || error.message || error);
@@ -232,7 +235,7 @@ async function handlePostSelection(req, res) {
         return res.status(400).send('Erro: Identificação do membro ausente.');
     }
 
-    const simulatedReqForTokens = { 
+    const simulatedReqForTokens = {
         body: {}, // Body vazio, pois não é placement
         query: { ...req.query } // Passa toda a query (incluindo member_id)
     };
@@ -254,7 +257,7 @@ async function handlePostSelection(req, res) {
                     contratanteData.nome = company.TITLE || '';
                     contratanteData.telefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
                     contratanteData.email = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
-                    contratanteData.cpf = company.UF_CRM_66C37392C9F3D || ''; 
+                    contratanteData.cpf = company.UF_CRM_66C37392C9F3D || '';
                     console.log('[Handler PostSelection] Dados da empresa carregados:', contratanteData);
                 } else {
                      console.warn("[Handler PostSelection] Empresa não encontrada com ID:", companyId);
@@ -275,7 +278,7 @@ async function handlePostSelection(req, res) {
         } else if (authType === 'socios_qtd') {
              console.log('[Handler PostSelection] Exibindo formulário para quantidade de sócios.');
              res.setHeader('Content-Type', 'text/html');
-             res.send(getSociosQtdHtml(companyId, authTokens.member_id)); 
+             res.send(getSociosQtdHtml(companyId, authTokens.member_id));
 
         } else if (authType === 'socios_form' && req.query.qtd) {
              const numSocios = parseInt(req.query.qtd, 10);
@@ -284,8 +287,8 @@ async function handlePostSelection(req, res) {
              }
              console.log(`[Handler PostSelection] Exibindo formulário para ${numSocios} sócios.`);
              res.setHeader('Content-Type', 'text/html');
-             res.send(getFormHtml('socios', contratanteData, numSocios)); 
-        
+             res.send(getFormHtml('socios', contratanteData, numSocios));
+
         } else {
             console.warn('[Handler PostSelection] Tipo inválido:', authType);
             res.status(400).send('Tipo de autorização inválido.');
@@ -299,14 +302,14 @@ async function handlePostSelection(req, res) {
 }
 
 // ==================================================================
-// FUNÇÕES AUXILIARES DE HTML 
+// FUNÇÕES AUXILIARES DE HTML
 // ==================================================================
 
 // HTML da tela de seleção inicial
 function getSelectionHtml(companyId, memberId) {
     // APONTA PARA SI MESMO (/api/install) com o parâmetro 'type'
     const buildUrl = (type) => `/api/install?type=${type}${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
-    
+
     return `
         <!DOCTYPE html>
         <html lang="pt-br">
@@ -378,9 +381,27 @@ function getSociosQtdHtml(companyId, memberId) {
 }
 
 
-// HTML principal do formulário (adaptado para os tipos)
+// HTML principal do formulário (com <select> e lógica condicional)
 function getFormHtml(type, contratanteData, numSocios = 1) {
     let contratanteHtml = '';
+
+    // Opções de Estado Civil
+    const estadoCivilSolteiroOptions = `
+        <option value="Solteiro(a)">Solteiro(a)</option>
+        <option value="Divorciado(a)">Divorciado(a)</option>
+        <option value="Viúvo(a)">Viúvo(a)</option>
+    `;
+    const estadoCivilCasadoOptions = `
+        <option value="Casado(a)">Casado(a)</option>
+        <option value="União Estável">União Estável</option>
+    `;
+    const regimeCasamentoOptions = `
+        <option value="Comunhão Parcial de Bens">Comunhão Parcial de Bens</option>
+        <option value="Comunhão Universal de Bens">Comunhão Universal de Bens</option>
+        <option value="Separação Total de Bens">Separação Total de Bens</option>
+        <option value="Participação Final nos Aquestos">Participação Final nos Aquestos</option>
+        <option value="Outro">Outro</option>
+    `;
 
     // Gera os blocos de contratante/sócio
     for (let i = 0; i < numSocios; i++) {
@@ -391,6 +412,8 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         const telefone = (i === 0) ? contratanteData.telefone : '';
         const email = (i === 0) ? contratanteData.email : '';
         
+        const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
+
         contratanteHtml += `
             <div class="form-section">
                 <h3>${titulo}</h3>
@@ -413,11 +436,17 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                     </div>
                     <div>
                         <label>Estado Civil:</label>
-                        <input type="text" name="${prefix}EstadoCivil">
+                        <select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')">
+                            <option value="">Selecione...</option>
+                            ${estadoCivilOptions}
+                        </select>
                     </div>
-                    <div>
+                    <div id="${prefix}RegimeDiv" style="display: none;"> {/* Oculto por padrão */}
                         <label>Regime de Casamento:</label>
-                        <input type="text" name="${prefix}RegimeCasamento" placeholder="Se aplicável">
+                         <select name="${prefix}RegimeCasamento">
+                            <option value="">Selecione...</option>
+                            ${regimeCasamentoOptions}
+                        </select>
                     </div>
                     <div class="grid-col-span-3">
                         <label>Endereço Residencial:</label>
@@ -458,6 +487,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                     <input type="text" name="conjugeProfissao">
                 </div>
                  <div class="grid-col-span-2"> 
+                     {/* Espaço vazio para alinhar */}
                     </div>
              </div>
         </div>
@@ -477,13 +507,13 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 .form-section { margin-bottom: 25px; border-bottom: 1px solid #f0f0f0; padding-bottom: 20px; }
                  .form-section:last-of-type { border-bottom: none; }
                 h3 { color: #0056b3; margin-top: 0; margin-bottom: 15px; font-size: 1.1em; border-left: 3px solid #007bff; padding-left: 8px;}
-                .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+                .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start; }
                 div { margin-bottom: 0; }
                 label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
-                input[type="text"], input[type="number"], input[type="email"], select {
-                    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box;
+                input[type="text"], input[type="number"], input[type="email"], select { 
+                    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; height: 38px; 
                 }
-                input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
+                input:focus, select:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
                 .grid-col-span-2 { grid-column: span 2; }
                 .grid-col-span-3 { grid-column: 1 / -1; }
                 
@@ -509,65 +539,58 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 ${contratanteHtml}
                 ${conjugeHtml}
 
-                <div class="form-section">
+                 <div class="form-section">
                     <h3>IMÓVEL</h3>
                     <div class="form-grid">
-                        <div class="grid-col-span-3">
-                            <label>Imóvel (Descrição):</label>
-                            <input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol">
-                        </div>
-                        <div class="grid-col-span-3">
-                            <label>Endereço do Imóvel:</label>
-                            <input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Inscrição Imobiliária/Matrícula:</label>
-                            <input type="text" name="imovelMatricula" placeholder="Nº da matrícula no Registro de Imóveis">
-                        </div>
-                        <div>
-                            <label>Valor do Imóvel (R$):</label>
-                            <input type="number" name="imovelValor" step="0.01" placeholder="500000.00">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Administradora de Condomínio:</label>
-                            <input type="text" name="imovelAdminCondominio" placeholder="Se aplicável">
-                        </div>
-                        <div>
-                            <label>Valor Condomínio (R$):</label>
-                            <input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00">
-                        </div>
-                        <div>
-                            <label>Chamada de Capital:</label>
-                            <input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00 (se houver)">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Nº de parcelas (Chamada Capital):</label>
-                            <input type="number" name="imovelNumParcelas" placeholder="Se aplicável">
-                        </div>
+                        <div class="grid-col-span-3"> <label>Imóvel (Descrição):</label> <input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"> </div>
+                        <div class="grid-col-span-3"> <label>Endereço do Imóvel:</label> <input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"> </div>
+                        <div class="grid-col-span-2"> <label>Inscrição Imobiliária/Matrícula:</label> <input type="text" name="imovelMatricula" placeholder="Nº da matrícula"> </div>
+                        <div> <label>Valor do Imóvel (R$):</label> <input type="number" name="imovelValor" step="0.01" placeholder="500000.00"> </div>
+                        <div class="grid-col-span-2"> <label>Administradora de Condomínio:</label> <input type="text" name="imovelAdminCondominio"> </div>
+                        <div> <label>Valor Condomínio (R$):</label> <input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"> </div>
+                        <div> <label>Chamada de Capital:</label> <input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"> </div>
+                        <div class="grid-col-span-2"> <label>Nº de parcelas (Chamada Capital):</label> <input type="number" name="imovelNumParcelas"> </div>
                     </div>
                 </div>
 
                 <div class="form-section">
                     <h3>CONTRATO</h3>
                     <div class="form-grid">
-                        <div>
-                            <label>Prazo de exclusividade (dias):</label>
-                            <input type="number" name="contratoPrazo" value="90" required>
-                        </div>
-                        <div>
-                            <label>Comissão (%):</label>
-                            <input type="number" name="contratoComissaoPct" value="6" step="0.1" required>
-                        </div>
+                        <div> <label>Prazo de exclusividade (dias):</label> <input type="number" name="contratoPrazo" value="90" required> </div>
+                        <div> <label>Comissão (%):</label> <input type="number" name="contratoComissaoPct" value="6" step="0.1" required> </div>
                     </div>
                 </div>
 
-                <div class="button-container">
-                    <button type="submit">Gerar PDF</button>
-                </div>
+                <div class="button-container"> <button type="submit">Gerar PDF</button> </div>
             </form>
+            
              <script src="//api.bitrix24.com/api/v1/"></script>
              <script>
-                  if (window.BX) { BX.ready(function() { BX.resizeWindow(window.innerWidth > 850 ? 850 : window.innerWidth, 700); BX.setTitle('Gerar Autorização'); }); }
+                  // Função para mostrar/ocultar Regime de Casamento
+                  function toggleRegime(prefix) {
+                      const estadoCivilSelect = document.getElementById(prefix + 'EstadoCivil');
+                      const regimeDiv = document.getElementById(prefix + 'RegimeDiv');
+                      if (estadoCivilSelect && regimeDiv) {
+                          const selectedValue = estadoCivilSelect.value;
+                          if (selectedValue === 'Casado(a)' || selectedValue === 'União Estável') {
+                              regimeDiv.style.display = 'block';
+                          } else {
+                              regimeDiv.style.display = 'none';
+                              // Limpa o valor do regime se não for aplicável
+                              const regimeSelect = regimeDiv.querySelector('select');
+                              if(regimeSelect) regimeSelect.value = ''; 
+                          }
+                      }
+                  }
+
+                  document.addEventListener('DOMContentLoaded', function() {
+                      const numSociosJS = ${numSocios}; 
+                      for (let i = 0; i < numSociosJS; i++) {
+                          const prefixJS = numSociosJS > 1 ? \`socio\${i+1}\` : 'contratante';
+                          toggleRegime(prefixJS); // Chama para definir estado inicial
+                      }
+                       if (window.BX) { BX.ready(function() { BX.resizeWindow(window.innerWidth > 850 ? 850 : window.innerWidth, 700); BX.setTitle('Gerar Autorização'); }); }
+                  });
              </script>
         </body>
         </html>

@@ -1,392 +1,420 @@
-import { call, getFreshTokens } from '../utils/b24.js';
+import PDFDocument from 'pdfkit';
+import path from 'path'; 
+import { fileURLToPath } from 'url'; 
 
+// --- HELPERS BÁSICOS ---
+function formatCurrency(value) {
+    // Retorna string vazia se inválido, para não imprimir 'N/A' nas caixas
+    if (!value || isNaN(value)) return ''; 
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+}
+
+// --- CONSTANTES DE LAYOUT ---
+const MARGIN = 50;
+const PAGE_WIDTH = 612;
+const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
+const PAGE_END = PAGE_WIDTH - MARGIN; // 562
+
+// ==================================================================
+// FUNÇÃO DE HEADER (CORRIGIDA)
+// ==================================================================
+function drawHeader(doc) {
+    try {
+        const __filename = fileURLToPath(import.meta.url); 
+        const __dirname = path.dirname(__filename);      
+        const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg'); 
+        console.log('Tentando carregar logo de:', logoPath); 
+
+        // Logo pequeno na esquerda
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); 
+        doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN + 90, MARGIN + 10); // Ajustado X
+
+    } catch (imageError) {
+         console.error("Erro ao carregar o logo:", imageError.message);
+         doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
+    }
+
+    // Título Central
+    doc.font('Helvetica-Bold').fontSize(12).text('Autorização de Venda', MARGIN, MARGIN + 25, { width: CONTENT_WIDTH, align: 'center' });
+    
+    // Bloco da Direita
+    const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
+    // doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' }); // Removido, já está centralizado
+    doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
+    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
+    
+    // Mais espaço abaixo
+    doc.y = MARGIN + 65; 
+}
+
+
+// ==================================================================
+// FUNÇÃO DE GERAÇÃO DE PDF (COM CHECKBOX E ASSINATURAS CONDICIONAIS)
+// ==================================================================
+async function generatePdfPromise(data) {
+    
+    return new Promise((resolve, reject) => {
+        
+        const doc = new PDFDocument({ margin: MARGIN, size: 'A4' });
+        const buffers = [];
+
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('error', (err) => reject(err));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
+
+        try {
+            drawHeader(doc);
+            
+            let y = doc.y;
+            const textPad = 5; 
+            const textYPad = 7; 
+            const labelBoxWidth = 22; 
+            const fieldBoxX = MARGIN + labelBoxWidth; 
+            const endX = MARGIN + CONTENT_WIDTH; 
+            let labelWidth = 0; 
+            const rowHeight = 20; 
+
+            // --- LÓGICA CONDICIONAL PARA CONTRATANTES ---
+            const authType = data.authType;
+            const numSocios = parseInt(data.numSocios, 10) || 1; // Pega do form
+
+            for (let i = 0; i < numSocios; i++) {
+                const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
+                const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
+                
+                 if (i > 0) y += 20; // Espaço entre sócios
+
+                const yC = y;
+                const hC = rowHeight * 5; // Altura do bloco (5 linhas)
+                
+                doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke(); 
+                doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke(); 
+                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2 + 5, 0, { width: hC, align: 'center' }).restore();
+
+                const xC_1 = fieldBoxX;
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
+                let yRow = yC;
+
+                // Linha 1: nome / profissão
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('nome:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('nome:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Nome`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(9).text('profissão:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('profissão:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Profissao`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
+
+                // Linha 2: CPF / RG
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('CPF:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Cpf`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(9).text('RG:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('RG:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Rg`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
+
+                // Linha 3: Estado Civil / Regime
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('Estado Civil:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Estado Civil:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}EstadoCivil`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                // Só mostra o Regime se foi preenchido
+                if (data[`${prefix}RegimeCasamento`]) {
+                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
+                    labelWidth = doc.widthOfString('Regime de Casamento:');
+                    doc.font('Helvetica').fontSize(9).text(data[`${prefix}RegimeCasamento`], xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                }
+                yRow += rowHeight;
+
+                // Linha 4: Endereço Residencial
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('Endereço Residencial:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Endereço Residencial:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Endereco`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
+
+                // Linha 5: Email
+                doc.font('Helvetica-Bold').fontSize(9).text('Email:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Email:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Email`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+
+                y = yRow + rowHeight; 
+            } // Fim do loop de sócios/contratante
+
+             // --- Bloco CÔNJUGE (se authType for 'casado') ---
+             if (authType === 'casado') {
+                 y += 15; 
+                 const yConj = y;
+                 const hConj = rowHeight * 2; 
+
+                 doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke(); 
+                 doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke(); 
+                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2 + 5, 0, { width: hConj, align: 'center' }).restore();
+
+                 const xConj_1 = fieldBoxX;
+                 const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 3; 
+                 const xConj_3 = fieldBoxX + 2*(CONTENT_WIDTH - labelBoxWidth) / 3;
+                 let yRowConj = yConj;
+
+                 // Linha 1 Cônjuge: Nome / CPF / RG
+                 doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
+                 doc.moveTo(xConj_2, yRowConj).lineTo(xConj_2, yRowConj + rowHeight).stroke(); // V
+                 doc.moveTo(xConj_3, yRowConj).lineTo(xConj_3, yRowConj + rowHeight).stroke(); // V
+                 doc.font('Helvetica-Bold').fontSize(9).text('Nome:', xConj_1 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('Nome:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeNome || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+
+                 doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xConj_2 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('CPF:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeCpf || '', xConj_2 + textPad + labelWidth + textPad, yRowConj + textYPad);
+
+                 doc.font('Helvetica-Bold').fontSize(9).text('RG:', xConj_3 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('RG:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeRg || '', xConj_3 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 yRowConj += rowHeight;
+
+                 // Linha 2 Cônjuge: Profissão (Span all)
+                 doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('Profissão:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 
+                 y = yRowConj + rowHeight; 
+             }
+
+
+            y += 15; 
+            
+            // ==================================================================
+            // 2. Bloco IMÓVEL (COM CHECKBOX DINÂMICO)
+            // ==================================================================
+            const yI = y;
+            const rHI = 20; 
+            const hI = rHI * 6; 
+
+            doc.rect(MARGIN, yI, CONTENT_WIDTH, hI).stroke(); 
+            doc.rect(MARGIN, yI, labelBoxWidth, hI).stroke(); 
+            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI/2 + 5, 0, { width: hI, align: 'center' }).restore();
+
+            const xI_1 = fieldBoxX;
+            const xI_2 = fieldBoxX + 318; 
+            let yIRow = yI;
+
+            // --- Linha 1 (Imóvel, Valor) ---
+            doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
+            doc.moveTo(xI_2, yIRow).lineTo(xI_2, yIRow + rHI).stroke(); // V
+            doc.font('Helvetica-Bold').fontSize(9).text('Imóvel:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Imóvel:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelDescricao || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
+            doc.font('Helvetica-Bold').fontSize(9).text('Valor:', xI_2 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Valor:');
+            doc.font('Helvetica').fontSize(9).text(formatCurrency(data.imovelValor) || '', xI_2 + textPad + labelWidth + textPad, yIRow + textYPad);
+            yIRow += rHI;
+
+            // --- Linha 2 (Endereço) ---
+            doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
+            doc.font('Helvetica-Bold').fontSize(9).text('Endereço:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Endereço:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelEndereco || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
+            yIRow += rHI;
+
+            // --- Linha 3 (Inscrição Imobiliária) ---
+            doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
+            doc.font('Helvetica-Bold').fontSize(9).text('Inscrição Imobiliária/Registro de Imóveis/Matrícula:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Inscrição Imobiliária/Registro de Imóveis/Matrícula:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelMatricula || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
+            yIRow += rHI;
+
+            // --- Linha 4 (Administradora) ---
+            doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
+            doc.font('Helvetica-Bold').fontSize(9).text('Administradora de Condomínio:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Administradora de Condomínio:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelAdminCondominio || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
+            yIRow += rHI;
+
+            // --- Linha 5 (Condomínio, Chamada, Parcelas) ---
+            const xI_L5_2 = fieldBoxX + 160; 
+            const xI_L5_3 = fieldBoxX + 360; 
+            doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
+            doc.moveTo(xI_L5_2, yIRow).lineTo(xI_L5_2, yIRow + rHI).stroke(); // V
+            doc.moveTo(xI_L5_3, yIRow).lineTo(xI_L5_3, yIRow + rHI).stroke(); // V
+            doc.font('Helvetica-Bold').fontSize(9).text('Condomínio-Valor R$:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Condomínio-Valor R$:');
+            doc.font('Helvetica').fontSize(9).text(formatCurrency(data.imovelValorCondominio) || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
+            doc.font('Helvetica-Bold').fontSize(9).text('Chamada de Capital R$:', xI_L5_2 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Chamada de Capital R$:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelChamadaCapital || '', xI_L5_2 + textPad + labelWidth + textPad, yIRow + textYPad);
+            doc.font('Helvetica-Bold').fontSize(9).text('Nº de parcelas:', xI_L5_3 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Nº de parcelas:');
+            doc.font('Helvetica').fontSize(9).text(data.imovelNumParcelas || '', xI_L5_3 + textPad + labelWidth + textPad, yIRow + textYPad);
+            yIRow += rHI;
+
+            // --- Linha 6 (Exclusividade, Prazo - COM LÓGICA DO CHECKBOX) ---
+            const xI_L6_2 = fieldBoxX + 220; 
+            doc.moveTo(xI_L6_2, yIRow).lineTo(xI_L6_2, yIRow + rHI).stroke(); // V
+            doc.font('Helvetica-Bold').fontSize(9).text('Exclusividade(*):', xI_1 + textPad, yIRow + textYPad);
+            
+            // Lógica do Checkbox
+            const prazoNum = parseInt(data.contratoPrazo, 10);
+            const temExclusividade = !isNaN(prazoNum) && prazoNum > 0;
+            const xSim = xI_1 + 90;
+            const xNao = xI_1 + 130;
+            const yCheck = yIRow + textYPad - 2;
+            const checkSize = 8;
+            
+            doc.rect(xSim, yCheck, checkSize, checkSize).stroke(); // Caixa SIM
+            doc.font('Helvetica').fontSize(9).text('SIM', xSim + checkSize + 2, yIRow + textYPad);
+            doc.rect(xNao, yCheck, checkSize, checkSize).stroke(); // Caixa NÃO
+            doc.font('Helvetica').fontSize(9).text('NÃO', xNao + checkSize + 2, yIRow + textYPad);
+
+            // Desenha o "X"
+            doc.font('Helvetica-Bold').fontSize(10); // Fonte maior para o X
+            if (temExclusividade) {
+                doc.text('X', xSim + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' }); 
+            } else {
+                doc.text('X', xNao + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' });
+            }
+            doc.fontSize(9); // Volta ao normal
+            
+            doc.font('Helvetica-Bold').text('Prazo de exclusividade:', xI_L6_2 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Prazo de exclusividade:');
+            // Mostra 0 se não for exclusividade
+            doc.font('Helvetica').text((temExclusividade ? data.contratoPrazo : '0') + ' dias', xI_L6_2 + textPad + labelWidth + textPad, yIRow + textYPad);
+
+            y = yIRow + rHI + 10; 
+            
+            // --- 3. Seção CLÁUSULAS ---
+            doc.y = y; 
+            doc.x = MARGIN; 
+            doc.font('Helvetica').fontSize(9); 
+            
+            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários inscrita no CNPJ sob nº 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
+            doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
+            doc.moveDown(1);
+            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, {indent: 10, align: 'justify'});
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, {indent: 10, align: 'justify'});
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', {indent: 10, align: 'justify'});
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', {indent: 10, align: 'justify'});
+            doc.moveDown(0.5);
+            doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', {indent: 10, align: 'justify'});
+            doc.moveDown(1);
+            const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
+            doc.text(textoFechamento, { align: 'justify', width: CONTENT_WIDTH });
+            doc.moveDown(2);
+
+            // --- 4. Assinaturas (CONDICIONAL) ---
+            const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
+            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
+            
+            // Move Y para baixo para as assinaturas, garantindo espaço
+            // Se tiver muitas assinaturas (sócios), pode precisar de ajuste
+            let sigY = doc.y + 40; // Aumenta espaço inicial
+            
+            const sigWidth = 160; 
+            const sigSpacing = (CONTENT_WIDTH - (3 * sigWidth)) / 2; // Espaço entre 3 colunas
+            const sigTextYOffset = 5; 
+            const sigSubTextYOffset = 15;
+            let currentSigX = MARGIN; 
+
+            // Função helper para desenhar uma assinatura
+            const drawSignature = (label, subLabel = '', x, yPos) => {
+                 doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
+                 doc.font('Helvetica-Bold').fontSize(8).text((label || '').toUpperCase(), x, yPos + sigTextYOffset, { width: sigWidth, align: 'center' });
+                 if (subLabel) {
+                     doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + sigSubTextYOffset, { width: sigWidth, align: 'center' });
+                 }
+            };
+            
+            // Beehouse (Sempre presente, na primeira posição)
+            drawSignature('Beehouse Investimentos Imobiliários', 'CNPJ 14.477.349/0001-23', currentSigX, sigY);
+            
+            if (authType === 'casado') {
+                // Desenha Contratante na segunda posição
+                currentSigX = MARGIN + sigWidth + sigSpacing;
+                drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
+                
+                // Desenha Cônjuge na terceira posição
+                currentSigX = MARGIN + 2 * (sigWidth + sigSpacing);
+                drawSignature(data.conjugeNome || 'CÔNJUGE', data.conjugeCpf || 'CPF/CNPJ', currentSigX, sigY);
+
+            } else if (authType === 'socios') {
+                 // Sócio 1 na segunda posição
+                 currentSigX = MARGIN + sigWidth + sigSpacing;
+                 drawSignature(data.socio1Nome || 'SÓCIO 1', data.socio1Cpf || 'CPF/CNPJ', currentSigX, sigY);
+
+                 // Sócio 2 na terceira posição
+                 currentSigX = MARGIN + 2 * (sigWidth + sigSpacing);
+                 drawSignature(data.socio2Nome || 'SÓCIO 2', data.socio2Cpf || 'CPF/CNPJ', currentSigX, sigY);
+                 
+                 // Próximos sócios em novas linhas
+                 let socioIndex = 2; // Começa a contar do terceiro sócio (índice 2)
+                 let lineIndex = 1; // Começa na segunda linha de assinaturas
+                 while (socioIndex < numSocios) {
+                      sigY += 40; // Pula para a próxima linha de assinaturas
+                      for (let col = 0; col < 3 && socioIndex < numSocios; col++) {
+                          currentSigX = MARGIN + col * (sigWidth + sigSpacing);
+                          const prefix = `socio${socioIndex + 1}`;
+                          drawSignature(data[`${prefix}Nome`] || `SÓCIO ${socioIndex + 1}`, data[`${prefix}Cpf`] || 'CPF/CNPJ', currentSigX, sigY);
+                          socioIndex++;
+                      }
+                      lineIndex++;
+                 }
+
+            } else { // Solteiro / Viúvo / Outro
+                 // Desenha Contratante na segunda posição
+                 currentSigX = MARGIN + sigWidth + sigSpacing;
+                 drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
+            }
+            
+            // --- FIM DA LÓGICA DE DESENHO ---
+
+            doc.end();
+
+        } catch (error) {
+            console.error('Erro síncrono ao desenhar PDF:', error);
+            reject(error);
+        }
+    });
+}
+
+
+// ==================================================================
+// HANDLER (USANDO ASYNC/AWAIT COM A PROMISE - JÁ FUNCIONANDO)
+// ==================================================================
 export default async function handler(req, res) {
-    console.log('[Handler] Request received.');
-    console.log('[Handler] Query:', req.query);
-    console.log('[Handler] Body:', req.body); // Body é usado para placement clicks
-
-    // Verifica se é um clique de placement inicial ou uma chamada subsequente com 'type'
-    const isPlacementClick = req.body && req.body.PLACEMENT;
-    const authType = req.query.type;
-    const memberIdFromBody = req.body?.member_id || req.body?.auth?.member_id;
-    const memberIdFromQuery = req.query.member_id; // member_id pode vir na query nas chamadas subsequentes
+    if (req.method !== 'POST') {
+        return res.status(405).send('Metodo nao permitido');
+    }
 
     try {
-        // Para chamadas subsequentes, precisamos garantir que temos o member_id
-        if (!isPlacementClick && !memberIdFromQuery) {
-            console.error('[Handler] member_id ausente na query para chamada não inicial.');
-            return res.status(400).send('Erro: Identificação do membro ausente.');
-        }
+        const data = req.body;
+        console.log('Iniciando geração do PDF com dados:', data); 
+
+        const pdfBuffer = await generatePdfPromise(data);
+
+        console.log('PDF pronto. Enviando resposta...');
         
-        // Simula a requisição para getFreshTokens, garantindo que member_id esteja presente
-        const simulatedReqForTokens = { 
-            body: req.body, 
-            query: { ...req.query, member_id: memberIdFromBody || memberIdFromQuery } // Garante member_id na query
-        };
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="Autorizacao_Venda_${data.contratanteNome || 'Contratante'}.pdf"`);
         
-        const authTokens = await getFreshTokens(simulatedReqForTokens);
-
-        if (!authTokens) {
-            console.error('[Handler] Falha ao obter/renovar tokens de autenticação.');
-            return res.status(401).send('Erro: Falha na autenticação ou tokens inválidos. Reinstale o aplicativo.');
-        }
-        console.log('[Handler] Tokens obtidos/renovados com sucesso para member_id:', authTokens.member_id);
-
-        let companyId = null;
-        if (isPlacementClick && req.body.PLACEMENT_OPTIONS) {
-            try {
-                const placementOptions = JSON.parse(req.body.PLACEMENT_OPTIONS);
-                companyId = placementOptions.ID;
-                console.log('[Handler] ID da Empresa (Placement):', companyId);
-            } catch (parseError) {
-                console.error("[Handler] Erro ao parsear PLACEMENT_OPTIONS:", parseError);
-                // Não retorna erro fatal aqui, pode ser que companyId venha da query depois
-            }
-        }
-        // Tenta pegar companyId da query se não veio do placement (para chamadas subsequentes)
-        if (!companyId && req.query.companyId) {
-             companyId = req.query.companyId;
-             console.log('[Handler] ID da Empresa (Query):', companyId);
-        }
-
-        let contratanteData = {
-            nome: '',
-            cpf: '',
-            telefone: '',
-            email: ''
-        };
-
-        // Busca dados da empresa SOMENTE se companyId estiver presente
-        if (companyId) {
-            console.log(`[Handler] Buscando dados para Empresa ID: ${companyId}`);
-            try {
-                const company = await call('crm.company.get', { id: companyId }, authTokens);
-                if (company) {
-                    contratanteData.nome = company.TITLE || '';
-                    contratanteData.telefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
-                    contratanteData.email = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
-                    contratanteData.cpf = company.UF_CRM_66C37392C9F3D || ''; // Campo customizado CPF
-                    console.log('[Handler] Dados da empresa carregados:', contratanteData);
-                } else {
-                     console.warn("[Handler] Empresa não encontrada com ID:", companyId);
-                }
-            } catch(companyError) {
-                 console.error("[Handler] Erro ao buscar dados da empresa:", companyError.message);
-                 // Não retorna erro fatal, continua com dados vazios
-            }
-        } else if (isPlacementClick) {
-             console.warn("[Handler] ID da Empresa não encontrado no clique do placement.");
-             // Não retorna erro fatal, permite seleção manual
-        }
-
-
-        // --- ROTEAMENTO BASEADO NO PARÂMETRO 'type' ---
-
-        if (!authType) {
-            // 1. NENHUM TIPO: Mostra a tela de seleção inicial
-            console.log('[Handler] Exibindo tela de seleção.');
-            res.setHeader('Content-Type', 'text/html');
-            res.send(getSelectionHtml(companyId, authTokens.member_id)); // Passa companyId e member_id
-
-        } else if (authType === 'solteiro') {
-            // 2. TIPO SOLTEIRO: Mostra formulário simples
-            console.log('[Handler] Exibindo formulário para Solteiro/Viúvo.');
-            res.setHeader('Content-Type', 'text/html');
-            res.send(getFormHtml('solteiro', contratanteData));
-
-        } else if (authType === 'casado') {
-            // 3. TIPO CASADO: Mostra formulário com campos do cônjuge
-            console.log('[Handler] Exibindo formulário para Casado/União Estável.');
-            res.setHeader('Content-Type', 'text/html');
-            res.send(getFormHtml('casado', contratanteData));
-            
-        } else if (authType === 'socios_qtd') {
-            // 4. TIPO SÓCIOS (Passo 1): Pede a quantidade
-             console.log('[Handler] Exibindo formulário para quantidade de sócios.');
-             res.setHeader('Content-Type', 'text/html');
-             res.send(getSociosQtdHtml(companyId, authTokens.member_id)); // Passa companyId e member_id
-
-        } else if (authType === 'socios_form' && req.query.qtd) {
-             // 5. TIPO SÓCIOS (Passo 2): Mostra o formulário com campos repetidos
-             const numSocios = parseInt(req.query.qtd, 10);
-             if (isNaN(numSocios) || numSocios < 1) {
-                 return res.status(400).send('Quantidade de sócios inválida.');
-             }
-             console.log(`[Handler] Exibindo formulário para ${numSocios} sócios.`);
-             res.setHeader('Content-Type', 'text/html');
-             // Passa o primeiro contratante pré-preenchido, os outros ficam vazios
-             res.send(getFormHtml('socios', contratanteData, numSocios)); 
-        
-        } else {
-            // Tipo inválido
-            console.warn('[Handler] Tipo de autorização inválido:', authType);
-            res.status(400).send('Tipo de autorização inválido.');
-        }
+        res.end(pdfBuffer);
 
     } catch (error) {
-        console.error('[Handler] Erro geral:', error.response?.data || error.details || error.message || error);
-        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido ao processar a requisição';
-        res.status(500).send(`Erro: ${errorMessage}`);
+        console.error('Erro no handler ao gerar PDF:', error);
+        res.status(500).send('Erro ao gerar PDF: ' + error.message);
     }
-}
-
-// --- FUNÇÕES AUXILIARES PARA GERAR HTML ---
-
-// HTML da tela de seleção inicial
-function getSelectionHtml(companyId, memberId) {
-    // Constrói os links mantendo companyId e memberId
-    const buildUrl = (type) => `/api/handler?type=${type}${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
-    
-    return `
-        <!DOCTYPE html>
-        <html lang="pt-br">
-        <head>
-            <meta charset="UTF-8">
-            <title>Selecionar Tipo de Autorização</title>
-             <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-                .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 100%;}
-                h2 { color: #333; margin-top: 0; margin-bottom: 25px; }
-                a { display: block; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; text-decoration: none; margin-bottom: 15px; font-weight: bold; }
-                a:hover { background-color: #0056b3; }
-                a.secondary { background-color: #6c757d; }
-                a.secondary:hover { background-color: #5a6268; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <h2>Selecione o Tipo de Autorização de Venda</h2>
-                <a href="${buildUrl('solteiro')}">Solteiro / Viúvo</a>
-                <a href="${buildUrl('casado')}">Casado / União Estável</a>
-                <a href="${buildUrl('socios_qtd')}" class="secondary">Imóvel de Sócios</a>
-            </div>
-        </body>
-        </html>
-    `;
-}
-
-// HTML para perguntar a quantidade de sócios
-function getSociosQtdHtml(companyId, memberId) {
-     const formAction = `/api/handler?type=socios_form${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
-     return `
-        <!DOCTYPE html>
-        <html lang="pt-br">
-        <head>
-            <meta charset="UTF-8">
-            <title>Quantidade de Sócios</title>
-             <style>
-                 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-                .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 100%;}
-                h2 { color: #333; margin-top: 0; margin-bottom: 25px; }
-                label { display: block; margin-bottom: 10px; font-weight: 600; color: #555; }
-                input[type="number"] { width: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px; margin-bottom: 20px; text-align: center; }
-                button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; }
-                button:hover { background-color: #0056b3; }
-             </style>
-        </head>
-         <body>
-            <div class="container">
-                <h2>Imóvel de Sócios</h2>
-                 <form action="${formAction}" method="GET">
-                     <label for="qtd">Quantos sócios são proprietários do imóvel?</label>
-                     <input type="number" id="qtd" name="qtd" min="2" value="2" required>
-                     <button type="submit">Continuar</button>
-                 </form>
-             </div>
-         </body>
-        </html>
-     `;
-}
-
-
-// HTML principal do formulário (adaptado para os tipos)
-function getFormHtml(type, contratanteData, numSocios = 1) {
-    let contratanteHtml = '';
-
-    // Gera os blocos de contratante/sócio
-    for (let i = 0; i < numSocios; i++) {
-        const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
-        const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
-        // Usa os dados pré-preenchidos apenas para o primeiro sócio/contratante
-        const nome = (i === 0) ? contratanteData.nome : '';
-        const cpf = (i === 0) ? contratanteData.cpf : '';
-        // RG e outros campos são sempre manuais por enquanto
-        
-        contratanteHtml += `
-            <div class="form-section">
-                <h3>${titulo}</h3>
-                <div class="form-grid">
-                    <div>
-                        <label>Nome:</label>
-                        <input type="text" name="${prefix}Nome" value="${nome}">
-                    </div>
-                    <div>
-                        <label>CPF:</label>
-                        <input type="text" name="${prefix}Cpf" value="${cpf}">
-                    </div>
-                    <div>
-                        <label>RG nº:</label>
-                        <input type="text" name="${prefix}Rg" placeholder="Ex: 9.999.999">
-                    </div>
-                    <div>
-                        <label>Profissão:</label>
-                        <input type="text" name="${prefix}Profissao">
-                    </div>
-                    <div>
-                        <label>Estado Civil:</label>
-                        <input type="text" name="${prefix}EstadoCivil">
-                    </div>
-                    <div>
-                        <label>Regime de Casamento:</label>
-                        <input type="text" name="${prefix}RegimeCasamento" placeholder="Se aplicável">
-                    </div>
-                    <div class="grid-col-span-3">
-                        <label>Endereço Residencial:</label>
-                        <input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
-                    </div>
-                    <div>
-                        <label>Telefone/Celular:</label>
-                        <input type="text" name="${prefix}Telefone" value="${(i === 0) ? contratanteData.telefone : ''}">
-                    </div>
-                    <div class="grid-col-span-2">
-                        <label>E-mail:</label>
-                        <input type="email" name="${prefix}Email" value="${(i === 0) ? contratanteData.email : ''}">
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Adiciona campos do cônjuge se for tipo 'casado'
-    const conjugeHtml = type === 'casado' ? `
-        <div class="form-section">
-            <h3>CÔNJUGE</h3>
-             <div class="form-grid">
-                <div>
-                    <label>Nome:</label>
-                    <input type="text" name="conjugeNome">
-                </div>
-                <div>
-                    <label>CPF:</label>
-                    <input type="text" name="conjugeCpf">
-                </div>
-                <div>
-                    <label>RG nº:</label>
-                    <input type="text" name="conjugeRg" placeholder="Ex: 9.999.999">
-                </div>
-                 <div>
-                    <label>Profissão:</label>
-                    <input type="text" name="conjugeProfissao">
-                </div>
-                 <div class="grid-col-span-2"> 
-                    </div>
-             </div>
-        </div>
-    ` : '';
-    
-    // Formulário completo
-    return `
-        <!DOCTYPE html>
-        <html lang="pt-br">
-        <head>
-            <meta charset="UTF-8">
-            <title>Gerar Autorização</title>
-            <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; }
-                h2 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-                form { max-width: 800px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-                .form-section { margin-bottom: 25px; border-bottom: 1px solid #f0f0f0; padding-bottom: 20px; }
-                 .form-section:last-of-type { border-bottom: none; }
-                h3 { color: #0056b3; margin-top: 0; margin-bottom: 15px; font-size: 1.1em; border-left: 3px solid #007bff; padding-left: 8px;}
-                .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-                div { margin-bottom: 0; }
-                label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
-                input[type="text"], input[type="number"], input[type="email"], select {
-                    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box;
-                }
-                input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
-                .grid-col-span-2 { grid-column: span 2; }
-                .grid-col-span-3 { grid-column: 1 / -1; }
-                
-                button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.2s; }
-                button:hover { background-color: #0056b3; }
-                 .button-container { text-align: center; margin-top: 20px; }
-
-                @media (max-width: 600px) {
-                    .form-grid { grid-template-columns: 1fr; }
-                    .grid-col-span-2 { grid-column: span 1; }
-                }
-            </style>
-        </head>
-        <body>
-            
-            <form action="/api/generate-pdf" method="POST" target="_blank">
-                 <h2>Gerar Autorização de Venda</h2>
-                 <p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p>
-
-                <input type="hidden" name="authType" value="${type}">
-                ${numSocios > 1 ? `<input type="hidden" name="numSocios" value="${numSocios}">` : ''}
-
-                ${contratanteHtml}
-                ${conjugeHtml}
-
-                <div class="form-section">
-                    <h3>IMÓVEL</h3>
-                    <div class="form-grid">
-                        <div class="grid-col-span-3">
-                            <label>Imóvel (Descrição):</label>
-                            <input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol">
-                        </div>
-                        <div class="grid-col-span-3">
-                            <label>Endereço do Imóvel:</label>
-                            <input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Inscrição Imobiliária/Matrícula:</label>
-                            <input type="text" name="imovelMatricula" placeholder="Nº da matrícula no Registro de Imóveis">
-                        </div>
-                        <div>
-                            <label>Valor do Imóvel (R$):</label>
-                            <input type="number" name="imovelValor" step="0.01" placeholder="500000.00">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Administradora de Condomínio:</label>
-                            <input type="text" name="imovelAdminCondominio" placeholder="Se aplicável">
-                        </div>
-                        <div>
-                            <label>Valor Condomínio (R$):</label>
-                            <input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00">
-                        </div>
-                        <div>
-                            <label>Chamada de Capital:</label>
-                            <input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00 (se houver)">
-                        </div>
-                        <div class="grid-col-span-2">
-                            <label>Nº de parcelas (Chamada Capital):</label>
-                            <input type="number" name="imovelNumParcelas" placeholder="Se aplicável">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <h3>CONTRATO</h3>
-                    <div class="form-grid">
-                        <div>
-                            <label>Prazo de exclusividade (dias):</label>
-                            <input type="number" name="contratoPrazo" value="90" required>
-                        </div>
-                        <div>
-                            <label>Comissão (%):</label>
-                            <input type="number" name="contratoComissaoPct" value="6" step="0.1" required>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="button-container">
-                    <button type="submit">Gerar PDF</button>
-                </div>
-            </form>
-        </body>
-        </html>
-    `;
 }
