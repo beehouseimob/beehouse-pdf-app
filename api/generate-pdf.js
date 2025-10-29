@@ -27,7 +27,7 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath);
 
         // 1. Bloco da Esquerda (Logo pequeno)
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); // Tamanho razoável
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 160 }); // Tamanho razoável
         // O nome da empresa foi movido para o bloco da direita
 
     } catch (imageError) {
