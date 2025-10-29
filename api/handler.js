@@ -271,9 +271,9 @@ async function generatePdfPromise(data) {
             // Desenha o "X"
             doc.font('Helvetica-Bold').fontSize(10); // Fonte maior para o X
             if (temExclusividade) {
-                doc.text('X', xSim - 3, yCheck + 200, { width: checkSize, height: checkSize, align: 'center' }); 
+                doc.text('X', xSim, yCheck, { width: checkSize, height: checkSize, align: 'center' }); 
             } else {
-                doc.text('X', xNao - 3, yCheck + 200, { width: checkSize, height: checkSize, align: 'center' });
+                doc.text('X', xNao + 100, yCheck, { width: checkSize, height: checkSize, align: 'center' });
             }
             doc.fontSize(8); // Volta ao normal
             
