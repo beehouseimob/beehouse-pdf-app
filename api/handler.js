@@ -38,7 +38,7 @@ function drawHeader(doc) {
     doc.font('Helvetica-Bold').fontSize(10).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(10).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
     doc.font('Helvetica').fontSize(8).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
-    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
+    doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
     // Mais espaço abaixo
     doc.y = MARGIN + 65; 
