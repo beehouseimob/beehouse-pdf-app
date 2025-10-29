@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 
 // --- HELPERS BÁSICOS ---
 function formatCurrency(value) {
-    // Retorna string vazia se inválido, para não imprimir 'N/A' nas caixas
     if (!value || isNaN(value)) return ''; 
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
@@ -12,45 +11,40 @@ function formatCurrency(value) {
 // --- CONSTANTES DE LAYOUT ---
 const MARGIN = 50;
 const PAGE_WIDTH = 612;
-const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
-const PAGE_END = PAGE_WIDTH - MARGIN; // 562
+const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); 
+const PAGE_END = PAGE_WIDTH - MARGIN; 
 
-// ==================================================================
-// FUNÇÃO DE HEADER CORRIGIDA (Balanceada e com Logo)
-// ==================================================================
+// --- FUNÇÃO DE HEADER (CORRIGIDA) ---
 function drawHeader(doc) {
     try {
-        // --- Constrói o caminho correto para o logo ---
-        const __filename = fileURLToPath(import.meta.url); // Caminho do arquivo atual (api/generate-pdf.js)
-        const __dirname = path.dirname(__filename);      // Diretório do arquivo atual (api)
-        // Sobe umível ('..') e entra em 'images'
+        const __filename = fileURLToPath(import.meta.url); 
+        const __dirname = path.dirname(__filename);      
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg'); 
         console.log('Tentando carregar logo de:', logoPath); 
 
-        // 1. Bloco da Esquerda (Logo + Nome)
-        // O logo em 'image_a53028.png' é pequeno. Usando 180.
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 180 }); 
+        // Logo pequeno na esquerda
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); 
+        doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN + 90, MARGIN + 10); // Ajustado X
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
-         // Fallback se o logo falhar
          doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
     }
+
+    // Título Central
+    doc.font('Helvetica-Bold').fontSize(12).text('Autorização de Venda', MARGIN, MARGIN + 25, { width: CONTENT_WIDTH, align: 'center' });
     
-    // 3. Bloco da Direita (Endereço) - como no seu código
+    // Bloco da Direita
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
-    doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
-    doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
-    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
-    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
+    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN, { width: 250, align: 'right' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
     
-    // Posição Y fixa após o header (com MAIS ESPAÇO)
+    // Mais espaço abaixo
     doc.y = MARGIN + 65; 
 }
 
-
 // ==================================================================
-// FUNÇÃO DE GERAÇÃO DE PDF (COM PROMISE - JÁ FUNCIONANDO)
+// FUNÇÃO DE GERAÇÃO DE PDF (COM LÓGICA CONDICIONAL)
 // ==================================================================
 async function generatePdfPromise(data) {
     
@@ -60,102 +54,137 @@ async function generatePdfPromise(data) {
         const buffers = [];
 
         doc.on('data', buffers.push.bind(buffers));
-        doc.on('error', (err) => {
-            console.error('Erro no stream do PDFKit:', err);
-            reject(err);
-        });
-        doc.on('end', () => {
-            const pdfData = Buffer.concat(buffers);
-            console.log('Stream do PDF finalizado. PDF pronto.');
-            resolve(pdfData); 
-        });
+        doc.on('error', (err) => reject(err));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
 
         try {
-            // ==================================================================
-            // INÍCIO DA LÓGICA DE DESENHO (CONTRATANTE ATUALIZADO)
-            // ==================================================================
-
-            drawHeader(doc); // Chama a função de cabeçalho corrigida
+            drawHeader(doc);
             
-            let y = doc.y; // Posição Y atual
-            
-            // --- Constantes de Desenho ---
+            let y = doc.y;
             const textPad = 5; 
             const textYPad = 7; 
             const labelBoxWidth = 22; 
             const fieldBoxX = MARGIN + labelBoxWidth; 
             const endX = MARGIN + CONTENT_WIDTH; 
             let labelWidth = 0; 
-            const rowHeight = 20; // Altura de linha 
+            const rowHeight = 20; 
 
-            // ==================================================================
-            // 1. Bloco CONTRATANTE (NOVO LAYOUT - image_222ae4.png)
-            // ==================================================================
-            const yC = y;
-            const hC = rowHeight * 5; // Altura Total (5 linhas)
-            
-            // Desenha caixas externas
-            doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke(); // Caixa externa
-            doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke(); // Caixa do label vertical
+            // --- LÓGICA CONDICIONAL PARA CONTRATANTES ---
+            const authType = data.authType;
+            const numSocios = parseInt(data.numSocios, 10) || 1; // Padrão 1 se não for sócios
 
-            // Desenha Texto Vertical
-            doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CONTRATANTE', -hC/2 + 5, 0, { width: hC, align: 'center' }).restore();
+            for (let i = 0; i < numSocios; i++) {
+                const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
+                const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
+                
+                 // Se for a segunda iteração ou mais, adiciona espaço extra
+                 if (i > 0) {
+                     y += 20; // Espaço entre sócios
+                 }
 
-            // --- Define as Colunas Internas ---
-            const xC_1 = fieldBoxX;
-            const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2; // Posição 50%
-            let yRow = yC;
+                // Desenha o bloco para cada contratante/sócio
+                const yC = y;
+                const hC = rowHeight * 5; // Altura do bloco (5 linhas)
+                
+                doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke(); 
+                doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke(); 
+                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2 + 5, 0, { width: hC, align: 'center' }).restore();
 
-            // --- Linha 1: nome / profissão ---
-            doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke(); // Linha H
-            doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke(); // Linha V
-            doc.font('Helvetica-Bold').fontSize(9).text('nome:', xC_1 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('nome:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteNome || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                const xC_1 = fieldBoxX;
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
+                let yRow = yC;
 
-            doc.font('Helvetica-Bold').fontSize(9).text('profissão:', xC_2 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('profissão:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteProfissao || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
-            yRow += rowHeight;
+                // Linha 1: nome / profissão
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('nome:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('nome:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Nome`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(9).text('profissão:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('profissão:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Profissao`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
 
-            // --- Linha 2: CPF / RG ---
-            doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke(); // H
-            doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke(); // V
-            doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xC_1 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('CPF:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteCpf || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                // Linha 2: CPF / RG
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('CPF:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Cpf`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(9).text('RG:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('RG:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Rg`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
 
-            doc.font('Helvetica-Bold').fontSize(9).text('RG:', xC_2 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('RG:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteRg || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
-            yRow += rowHeight;
+                // Linha 3: Estado Civil / Regime
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('Estado Civil:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Estado Civil:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}EstadoCivil`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Regime de Casamento:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}RegimeCasamento`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
 
-            // --- Linha 3: Estado Civil / Regime ---
-            doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke(); // H
-            doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke(); // V
-            doc.font('Helvetica-Bold').fontSize(9).text('Estado Civil:', xC_1 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('Estado Civil:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteEstadoCivil || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                // Linha 4: Endereço Residencial
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
+                doc.font('Helvetica-Bold').fontSize(9).text('Endereço Residencial:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Endereço Residencial:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Endereco`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                yRow += rowHeight;
 
-            doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('Regime de Casamento:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteRegimeCasamento || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
-            yRow += rowHeight;
+                // Linha 5: Email
+                doc.font('Helvetica-Bold').fontSize(9).text('Email:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Email:');
+                doc.font('Helvetica').fontSize(9).text(data[`${prefix}Email`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
 
-            // --- Linha 4: Endereço Residencial ---
-            doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke(); // H
-            doc.font('Helvetica-Bold').fontSize(9).text('Endereço Residencial:', xC_1 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('Endereço Residencial:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteEndereco || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
-            yRow += rowHeight;
+                y = yRow + rowHeight; // Atualiza y global
+            } // Fim do loop de sócios/contratante
 
-            // --- Linha 5: Email ---
-            // Sem linha H (é a última)
-            doc.font('Helvetica-Bold').fontSize(9).text('Email:', xC_1 + textPad, yRow + textYPad);
-            labelWidth = doc.widthOfString('Email:');
-            doc.font('Helvetica').fontSize(9).text(data.contratanteEmail || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
-            
-            y = yRow + rowHeight + 15; // Move Y para baixo do bloco
+             // --- Bloco CÔNJUGE (se authType for 'casado') ---
+             if (authType === 'casado') {
+                 y += 15; // Espaço antes do bloco Cônjuge
+                 const yConj = y;
+                 const hConj = rowHeight * 2; // Altura para 2 linhas (Nome/CPF/RG + Profissão)
+
+                 doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke(); 
+                 doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke(); 
+                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2 + 5, 0, { width: hConj, align: 'center' }).restore();
+
+                 const xConj_1 = fieldBoxX;
+                 const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 3; // ~33%
+                 const xConj_3 = fieldBoxX + 2*(CONTENT_WIDTH - labelBoxWidth) / 3; // ~66%
+                 let yRowConj = yConj;
+
+                 // Linha 1 Cônjuge: Nome / CPF / RG
+                 doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
+                 doc.moveTo(xConj_2, yRowConj).lineTo(xConj_2, yRowConj + rowHeight).stroke(); // V
+                 doc.moveTo(xConj_3, yRowConj).lineTo(xConj_3, yRowConj + rowHeight).stroke(); // V
+                 doc.font('Helvetica-Bold').fontSize(9).text('Nome:', xConj_1 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('Nome:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeNome || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+
+                 doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xConj_2 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('CPF:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeCpf || '', xConj_2 + textPad + labelWidth + textPad, yRowConj + textYPad);
+
+                 doc.font('Helvetica-Bold').fontSize(9).text('RG:', xConj_3 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('RG:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeRg || '', xConj_3 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 yRowConj += rowHeight;
+
+                 // Linha 2 Cônjuge: Profissão (Span all)
+                 // Sem H (última linha)
+                 doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('Profissão:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 
+                 y = yRowConj + rowHeight; // Atualiza y global
+             }
+
+
+            y += 15; // Espaço antes do bloco Imóvel
             
             // ==================================================================
             // 2. Bloco IMÓVEL (LAYOUT MANTIDO, ESPAÇO AJUSTADO)
@@ -258,27 +287,27 @@ async function generatePdfPromise(data) {
             
             // Cláusula 1
             doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, {indent: 20, align: 'justify'});
+            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
 
             // Cláusula 2
             doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, {indent: 20, align: 'justify'});
+            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 3
             doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', {indent: 20, align: 'justify'});
+            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 4
             doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', {indent: 20, align: 'justify'});
+            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 5
             doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', {indent: 20, align: 'justify'});
+            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(1);
 
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
@@ -287,13 +316,13 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { continued: true });
-            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 10, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
+            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
             doc.moveDown(3);
 
             const sigY = doc.y;
-            const sigLeftX = MARGIN;
-            const sigRightX = MARGIN + 250;
+            const sigLeftX = MARGIN + 40;
+            const sigRightX = MARGIN + 300;
             const sigWidth = 220;
 
             // Assinatura Esquerda (Beehouse)
