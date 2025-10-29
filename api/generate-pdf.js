@@ -16,7 +16,7 @@ const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 // ==================================================================
-// FUNÇÃO DE HEADER CORRIGIDA (Carrega logo e bate com image_a53028.png)
+// FUNÇÃO DE HEADER CORRIGIDA (Logo menor e mais espaço abaixo)
 // ==================================================================
 function drawHeader(doc) {
     try {
@@ -27,23 +27,27 @@ function drawHeader(doc) {
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg'); 
         console.log('Tentando carregar logo de:', logoPath); 
 
-        // Desenha o logo
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 200, valign: 'top' });
+        // ==================================================
+        // ALTERAÇÃO 1: Logo reduzido de 200 para 80
+        // ==================================================
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80, valign: 'top' }); 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
          // Fallback se o logo falhar
-        }
+    }
         
-        // Título do Documento (Centralizado, como em image_a53028.png)
         
-        // Bloco de Endereço (Alinhado à Direita, como em image_a53028.png)
+    // Bloco de Endereço (Alinhado à Direita) - Sem alterações
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
     doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
     doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
-    doc.y = MARGIN + 50; // Posição Y fixa após o header
+    // ==================================================
+    // ALTERAÇÃO 2: Aumentado o espaço de 50 para 65
+    // ==================================================
+    doc.y = MARGIN + 65; // Posição Y fixa após o header
 }
 
 
@@ -256,27 +260,27 @@ async function generatePdfPromise(data) {
             
             // Cláusula 1
             doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN, doc.y, {indent: 10, indentAllLines: true});
+            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
 
             // Cláusula 2
             doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`,MARGIN, doc.y, {indent: 10, indentAllLines: true});
+            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 3
             doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.',MARGIN, doc.y, {indent: 10, indentAllLines: true});
+            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 4
             doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.',MARGIN, doc.y, {indent: 10, indentAllLines: true});
+            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(0.5);
             
             // Cláusula 5
             doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.',MARGIN, doc.y);
+            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', {indent: 10, align: 'justify', width: CONTENT_WIDTH - 10 });
             doc.moveDown(1);
 
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
@@ -285,8 +289,8 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { continued: true, indent: 0 });
-            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 10, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
+            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
             doc.moveDown(3);
 
             const sigY = doc.y;
