@@ -96,7 +96,7 @@ async function generatePdfPromise(data) {
             doc.moveTo(xC_3, yRow).lineTo(xC_3, yRow + rHC).stroke(); // Linha V
             doc.font('Helvetica-Bold').text('Nome:', xC_1 + textPad, yRow + textYPad);
             doc.font('Helvetica').text(data.contratanteNome || '', xC_1 + 40, yRow + textYPad);
-            doc.font('Helvetica-Bold').text('CNH nº:', xC_2 + textPad, yRow + textYPad);
+            doc.font('Helvetica-Bold').text('RG nº:', xC_2 + textPad, yRow + textYPad);
             doc.font('Helvetica').text(data.contratanteRg || '', xC_2 + 50, yRow + textYPad); // Usando RG no campo CNH
             doc.font('Helvetica-Bold').text('Profissão:', xC_3 + textPad, yRow + textYPad);
             doc.font('Helvetica').text(data.contratanteProfissao || '', xC_3 + 55, yRow + textYPad);
