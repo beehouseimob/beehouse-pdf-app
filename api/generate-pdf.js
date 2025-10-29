@@ -184,6 +184,12 @@ async function generatePdfPromise(data) {
                  labelWidth = doc.widthOfString('Profissão:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
 
+                 // Linha 3 Email Cônjuge: 
+                 doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke(); // Desenha linha inferior
+                 doc.font('Helvetica-Bold').fontSize(9).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('Email:');
+                 doc.font('Helvetica').fontSize(9).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+
                  y = yConj + hConj; // Usa a altura total
              }
 
