@@ -183,6 +183,7 @@ async function generatePdfPromise(data) {
                  doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Profissão:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 yRowConj += rowHeight;
 
                  // Linha 3 Email Cônjuge: 
                  doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke(); // Desenha linha inferior
