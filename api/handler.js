@@ -32,10 +32,7 @@ function drawHeader(doc) {
         console.error("Erro ao carregar o logo:", imageError.message);
         doc.font('Helvetica-Bold').fontSize(10).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
     }
-    
-    // Título Central
-    doc.font('Helvetica-Bold').fontSize(12).text('Autorização de Venda', MARGIN, MARGIN + 25, { width: CONTENT_WIDTH, align: 'center' });
-    
+
     // Bloco da Direita
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
     doc.font('Helvetica-Bold').fontSize(10).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
