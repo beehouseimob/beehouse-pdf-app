@@ -92,7 +92,7 @@ async function generatePdfPromise(data) {
 
                 doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke();
                 doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke();
-                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2 + 5, 0, { width: hC, align: 'center' }).restore();
+                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2, 0, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
                 const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
@@ -156,7 +156,7 @@ async function generatePdfPromise(data) {
 
                  doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke();
                  doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke();
-                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2 + 10, 0, { width: hConj, align: 'center' }).restore();
+                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2, 0, { width: hConj, align: 'center' }).restore();
 
                  const xConj_1 = fieldBoxX;
                  const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 3;
@@ -199,7 +199,7 @@ async function generatePdfPromise(data) {
 
             doc.rect(MARGIN, yI, CONTENT_WIDTH, hI).stroke();
             doc.rect(MARGIN, yI, labelBoxWidth, hI).stroke();
-            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI/2 + 5, 0, { width: hI, align: 'center' }).restore();
+            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI/2, 0, { width: hI, align: 'center' }).restore();
 
             const xI_1 = fieldBoxX;
             const xI_2 = fieldBoxX + 318;
