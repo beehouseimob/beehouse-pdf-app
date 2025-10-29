@@ -28,24 +28,20 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath); 
 
         // Desenha o logo
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 60 });
-        
-        // Título da Empresa (ao lado do logo)
-        doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', MARGIN + 70, MARGIN + 10);
-
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 250 });
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
          // Fallback se o logo falhar
-         doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
-    }
-
-    // Título do Documento (Centralizado, como em image_a53028.png)
-    doc.font('Helvetica-Bold').fontSize(14).text('AUTORIZAÇÃO DE VENDA', 0, MARGIN + 30, { align: 'center' });
-
-    // Bloco de Endereço (Alinhado à Direita, como em image_a53028.png)
-    const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
-    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN, { width: 250, align: 'right' });
-    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
+        }
+        
+        // Título do Documento (Centralizado, como em image_a53028.png)
+        
+        // Bloco de Endereço (Alinhado à Direita, como em image_a53028.png)
+        const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
+    doc.font('Helvetica-Bold').fontSize(14).text('AUTORIZAÇÃO DE VENDA', rightAlignX, MARGIN, { width: 250, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
+    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
     doc.y = MARGIN + 50; // Posição Y fixa após o header
 }
