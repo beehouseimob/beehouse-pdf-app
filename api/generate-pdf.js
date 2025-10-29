@@ -287,7 +287,7 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { indent: 0 });
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { continued: true });
             doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
             doc.moveDown(3);
 
