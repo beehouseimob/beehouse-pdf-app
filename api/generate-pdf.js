@@ -17,11 +17,7 @@ const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 // NOVA FUNÇÃO DE HEADER (Baseada em image_a53028.png)
 // ==================================================================
 function drawHeader(doc) {
-    doc.image('images/Logo.png', MARGIN, MARGIN, { width: 50 });
-    
-    // Título da Empresa (ao lado de onde o logo estaria)
-    
-    // Bloco de Endereço (Alinhado à Direita)
+    doc.image('images/logo.png', MARGIN, MARGIN, { width: 50 });
     
     // Título do Documento (Centralizado)
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; // Posição X para o bloco da direita
