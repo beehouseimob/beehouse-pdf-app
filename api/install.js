@@ -26,7 +26,6 @@ export default async function handler(req, res) {
     // --- ROTEAMENTO COM PRIORIDADE CORRIGIDA ---
 
     // PRIORIDADE 1: Clique no Botão (Placement Específico)
-    // Esta verificação DEVE vir antes da verificação do AUTH_ID
     if (placement && placement === 'CRM_COMPANY_DETAIL_TOOLBAR') {
         console.log('[Router] Detectado clique no botão CRM_COMPANY_DETAIL_TOOLBAR.');
         if (!memberId) {
@@ -42,7 +41,6 @@ export default async function handler(req, res) {
         if (!placement || placement === 'DEFAULT') {
              await handleLocalInstall(req, res, params);
         } else {
-             // Caso inesperado: AUTH_ID com um placement desconhecido.
              console.warn(`[Install] AUTH_ID recebido com PLACEMENT inesperado: ${placement}. Ignorando.`);
              res.status(200).send('Recebido (AUTH_ID com placement não padrão)');
         }
@@ -65,7 +63,6 @@ export default async function handler(req, res) {
     // FLUXO NÃO RECONHECIDO
     else {
         console.warn('[Install] Parâmetros não correspondem a OAuth, App Local, Clique de Botão, Pós-Seleção ou Verificação Inicial.', params);
-        // É importante responder 200 OK para algumas chamadas do Bitrix24
         res.status(200).send('Tipo de requisição não processada ou já tratada.');
     }
 }
@@ -102,7 +99,6 @@ async function handleLocalInstall(req, res, params) {
         if (params.PLACEMENT === 'DEFAULT') {
             res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
         } else {
-             // Se chegou aqui sem ser DEFAULT (talvez uma atualização manual), só confirma.
              res.send('Atualização Local Processada.');
         }
 
@@ -168,7 +164,6 @@ async function handleOAuthInstall(req, res, params) {
 async function handlePlacementClick(req, res) {
     console.log('[Handler] Clique de botão (CRM_COMPANY_DETAIL_TOOLBAR) iniciado.');
 
-    // Precisamos garantir member_id para getFreshTokens e para construir URLs
     const memberId = req?.body?.member_id || req?.body?.auth?.member_id || req?.query?.member_id;
     if (!memberId) {
         console.error('[Handler] member_id não encontrado na requisição do placement.');
@@ -206,10 +201,8 @@ async function handlePlacementClick(req, res) {
             return res.status(400).send('ID da Empresa não encontrado na requisição do placement.');
         }
 
-        // Exibe a tela de SELEÇÃO, passando companyId e member_id
         console.log('[Handler] Exibindo tela de seleção.');
         res.setHeader('Content-Type', 'text/html');
-        // Chama a função que gera o HTML da tela de seleção
         res.send(getSelectionHtml(companyId, authTokens.member_id));
 
     } catch (error) {
@@ -226,7 +219,7 @@ async function handlePlacementClick(req, res) {
 async function handlePostSelection(req, res) {
     const authType = req.query.type;
     const companyId = req.query.companyId;
-    const memberId = req.query.member_id; // Essencial para getFreshTokens
+    const memberId = req.query.member_id;
 
     console.log(`[Handler PostSelection] Recebido type=${authType}, companyId=${companyId}, memberId=${memberId}`);
 
@@ -236,8 +229,8 @@ async function handlePostSelection(req, res) {
     }
 
     const simulatedReqForTokens = {
-        body: {}, // Body vazio, pois não é placement
-        query: { ...req.query } // Passa toda a query (incluindo member_id)
+        body: {},
+        query: { ...req.query }
     };
 
     try {
@@ -249,8 +242,6 @@ async function handlePostSelection(req, res) {
 
         let contratanteData = { nome: '', cpf: '', telefone: '', email: '' };
 
-        // Busca dados da empresa apenas se necessário (para solteiro, casado, socios_form)
-        // Não busca para socios_qtd, pois não preenchemos nada
         if (companyId && authType !== 'socios_qtd') {
             console.log(`[Handler PostSelection] Buscando dados para Empresa ID: ${companyId}`);
             try {
@@ -267,12 +258,12 @@ async function handlePostSelection(req, res) {
             } catch(companyError) {
                  console.error("[Handler PostSelection] Erro ao buscar dados da empresa:", companyError.message);
             }
-        } else if (authType !== 'socios_qtd') { // Só avisa se não for a tela de qtd
+        } else if (authType !== 'socios_qtd') {
             console.warn("[Handler PostSelection] companyId não fornecido na query.");
         }
 
         // --- ROTEAMENTO DO FORMULÁRIO ---
-        res.setHeader('Content-Type', 'text/html'); // Define o header aqui para evitar repetição
+        res.setHeader('Content-Type', 'text/html');
 
         if (authType === 'solteiro' || authType === 'casado') {
             console.log(`[Handler PostSelection] Exibindo formulário para ${authType}.`);
@@ -442,7 +433,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                             ${estadoCivilOptions}
                         </select>
                     </div>
-                    <div id="${prefix}RegimeDiv" style="display: none;">
+                    <div id="${prefix}RegimeDiv" style="display: none;"> {/* Oculto por padrão */}
                         <label>Regime de Casamento:</label>
                          <select name="${prefix}RegimeCasamento">
                             <option value="">Selecione...</option>
@@ -488,6 +479,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                     <input type="text" name="conjugeProfissao">
                 </div>
                  <div class="grid-col-span-2">
+                     {/* Espaço vazio para alinhar */}
                     </div>
              </div>
         </div>
