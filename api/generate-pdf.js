@@ -27,7 +27,7 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath);
 
         // 1. Bloco da Esquerda (Logo pequeno)
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); // Tamanho razoável
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 180 }); // Tamanho razoável
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
