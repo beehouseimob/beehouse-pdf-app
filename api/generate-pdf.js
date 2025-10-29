@@ -27,8 +27,7 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath);
 
         // 1. Bloco da Esquerda (Logo pequeno)
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 160 }); // Tamanho razoável
-        // O nome da empresa foi movido para o bloco da direita
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); // Tamanho razoável
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
@@ -52,7 +51,7 @@ function drawHeader(doc) {
 
 
 // ==================================================================
-// FUNÇÃO DE GERAÇÃO DE PDF (COM CHECKBOX CORRIGIDO)
+// FUNÇÃO DE GERAÇÃO DE PDF (COM BLOCO CÔNJUGE CORRIGIDO)
 // ==================================================================
 async function generatePdfPromise(data) {
 
@@ -92,10 +91,10 @@ async function generatePdfPromise(data) {
 
                 doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke();
                 doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke();
-                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2, 0, { width: hC, align: 'center' }).restore();
+                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore(); // Centralizado
 
                 const xC_1 = fieldBoxX;
-                const xC_2 = fieldBoxX + (CONTENT_WIDTH) / 2;
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
                 let yRow = yC;
 
                 // Linha 1: nome / profissão
@@ -152,11 +151,15 @@ async function generatePdfPromise(data) {
              if (authType === 'casado') {
                  y += 15;
                  const yConj = y;
-                 const hConj = rowHeight * 2.5; // Altura aumentada
+                 // ==================================================
+                 // CORREÇÃO: Altura para 3 linhas (Nome/CPF/RG, Profissão, Email)
+                 const hConj = rowHeight * 3; // Aumentado para 3 linhas
+                 // ==================================================
 
                  doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke();
                  doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke();
-                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2, 0, { width: hConj, align: 'center' }).restore();
+                 // Ajustado posicionamento Y do texto vertical para nova altura
+                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore();
 
                  const xConj_1 = fieldBoxX;
                  const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 3;
@@ -178,20 +181,23 @@ async function generatePdfPromise(data) {
                  doc.font('Helvetica').fontSize(9).text(data.conjugeRg || '', xConj_3 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  yRowConj += rowHeight;
 
-                 // Linha 2 Cônjuge: Profissão
-                 doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke(); // Desenha linha inferior
+                 // Linha 2 Cônjuge: Profissão (Span all)
+                 doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
                  doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Profissão:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  yRowConj += rowHeight;
 
-                 // Linha 3 Email Cônjuge: 
-                 doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke(); // Desenha linha inferior
+                 // ==================================================
+                 // CORREÇÃO: Adicionada Linha 3 para Email do Cônjuge
+                 // ==================================================
+                 // Sem linha H (é a última linha do bloco)
                  doc.font('Helvetica-Bold').fontSize(9).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Email:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 // yRowConj += rowHeight; // Não precisa incrementar Y aqui
 
-                 y = yConj + hConj; // Usa a altura total
+                 y = yConj + hConj; // Usa a altura total da caixa (agora 3 linhas)
              }
 
 
@@ -206,7 +212,7 @@ async function generatePdfPromise(data) {
 
             doc.rect(MARGIN, yI, CONTENT_WIDTH, hI).stroke();
             doc.rect(MARGIN, yI, labelBoxWidth, hI).stroke();
-            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI/2, 0, { width: hI, align: 'center' }).restore();
+            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI / 2, -4, { width: hI, align: 'center' }).restore(); // Centralizado
 
             const xI_1 = fieldBoxX;
             const xI_2 = fieldBoxX + 318;
@@ -281,16 +287,14 @@ async function generatePdfPromise(data) {
 
             // Desenha o "X" centralizado
             doc.font('Helvetica-Bold').fontSize(10);
-            const xMarkXOffset = checkSize / 2; // Metade horizontal
-            const xMarkYOffset = checkSize / 2 - 0.5; // Metade vertical ajustada
+            const xMarkXOffset = checkSize / 2;
+            const xMarkYOffset = checkSize / 2 - 0.5;
             if (temExclusividade) {
-                // Desenha X no SIM
                 doc.path(`M ${xSim} ${yCheck} L ${xSim + checkSize} ${yCheck + checkSize} M ${xSim + checkSize} ${yCheck} L ${xSim} ${yCheck + checkSize}`).lineWidth(1.5).stroke();
             } else {
-                 // Desenha X no NÃO
                 doc.path(`M ${xNao} ${yCheck} L ${xNao + checkSize} ${yCheck + checkSize} M ${xNao + checkSize} ${yCheck} L ${xNao} ${yCheck + checkSize}`).lineWidth(1.5).stroke();
             }
-            doc.fontSize(9); // Volta ao normal
+            doc.fontSize(9);
 
             doc.font('Helvetica-Bold').text('Prazo de exclusividade:', xI_L6_2 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Prazo de exclusividade:');
@@ -302,8 +306,8 @@ async function generatePdfPromise(data) {
             doc.y = y;
             doc.x = MARGIN;
             doc.font('Helvetica').fontSize(9);
-
-            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários inscrita no CNPJ sob nº 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
+            // ... (Cláusulas e texto de fechamento permanecem iguais) ...
+             const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários inscrita no CNPJ sob nº 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
             doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(1);
             doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true });
@@ -324,6 +328,7 @@ async function generatePdfPromise(data) {
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
             doc.text(textoFechamento, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(2);
+
 
             // --- 4. Assinaturas (CONDICIONAL) ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
