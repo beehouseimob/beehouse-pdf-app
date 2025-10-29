@@ -28,7 +28,7 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath); 
 
         // Desenha o logo
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 250 });
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 200 });
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
          // Fallback se o logo falhar
@@ -37,9 +37,9 @@ function drawHeader(doc) {
         // Título do Documento (Centralizado, como em image_a53028.png)
         
         // Bloco de Endereço (Alinhado à Direita, como em image_a53028.png)
-        const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
-    doc.font('Helvetica-Bold').fontSize(14).text('AUTORIZAÇÃO DE VENDA', rightAlignX, MARGIN, { width: 250, align: 'right' });
-    doc.font('Helvetica-Bold').fontSize(12).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
+    const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
+    doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
     doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
     doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
     
@@ -301,7 +301,7 @@ async function generatePdfPromise(data) {
 
             // Assinatura Direita (Contratante)
             doc.moveTo(sigRightX, sigY).lineTo(sigRightX + sigWidth, sigY).stroke();
-            doc.font('Helvetica-Bold').fontSize(8).text('CONTRATANTE', sigRightX, sigY + 10, { width: sigWidth, align: 'center' });
+            doc.font('Helvetica-Bold').fontSize(8).text('CONTRATANTE', sigRightX, sigY + 5, { width: sigWidth, align: 'center' });
             
             // --- FIM DA LÓGICA DE DESENHO ---
 
