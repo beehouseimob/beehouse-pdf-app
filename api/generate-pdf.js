@@ -301,7 +301,7 @@ async function generatePdfPromise(data) {
 
             // Assinatura Direita (Contratante)
             doc.moveTo(sigRightX, sigY).lineTo(sigRightX + sigWidth, sigY).stroke();
-            doc.font('Helvetica-Bold').fontSize(8).text('CONTRATANTE', sigRightX, sigY + 5, { width: sigWidth, align: 'center' });
+            doc.font('Helvetica-Bold').fontSize(8).text('CONTRATANTE', sigRightX, sigY + 10, { width: sigWidth, align: 'center' });
             
             // --- FIM DA LÓGICA DE DESENHO ---
 
