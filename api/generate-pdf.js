@@ -292,8 +292,8 @@ async function generatePdfPromise(data) {
             doc.moveDown(3);
 
             const sigY = doc.y;
-            const sigLeftX = MARGIN + 40;
-            const sigRightX = MARGIN + 300;
+            const sigLeftX = MARGIN;
+            const sigRightX = MARGIN + 250;
             const sigWidth = 220;
 
             // Assinatura Esquerda (Beehouse)
