@@ -16,17 +16,19 @@ const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 // ==================================================================
-// FUNÇÃO DE HEADER CORRIGIDA (Layout como image_a53028.png / image_237196.png)
+// FUNÇÃO DE HEADER CORRIGIDA (Layout como image_237196.png)
 // ==================================================================
 function drawHeader(doc) {
     try {
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
+        // Ajuste o caminho se necessário, baseado na sua estrutura de pastas
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg');
         console.log('Tentando carregar logo de:', logoPath);
 
-        // 1. Bloco da Esquerda (Logo) - Usando tamanho 80 como antes
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 });
+        // 1. Bloco da Esquerda (Logo pequeno)
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 }); // Tamanho razoável
+        // O nome da empresa foi movido para o bloco da direita
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
@@ -34,17 +36,15 @@ function drawHeader(doc) {
          doc.font('Helvetica-Bold').fontSize(11).text('Beehouse', MARGIN, MARGIN + 10);
     }
 
-    // 2. Bloco da Direita (Título, Nome, Endereço)
+    // 2. Bloco da Direita (Título, Nome da Empresa, Endereço)
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; // Posição X do bloco
     const blockWidth = 250; // Largura do bloco
     const initialY = MARGIN - 5; // Posição Y inicial (um pouco acima da margem)
 
-    // Ajustado para BOLD e tamanho 11
     doc.font('Helvetica-Bold').fontSize(11).text('Autorização de Venda', rightAlignX, initialY, { width: blockWidth, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, initialY + 12, { width: blockWidth, align: 'right' });
     doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, initialY + 24, { width: blockWidth, align: 'right' });
-    // Corrigido para .imb.br como no código anterior
-    doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' }); // Corrigido URL
 
     // Posição Y fixa após o header (mantendo espaço extra)
     doc.y = MARGIN + 65;
@@ -85,10 +85,10 @@ async function generatePdfPromise(data) {
                 const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
                 const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
 
-                 if (i > 0) y += 20; // Espaço entre sócios
+                 if (i > 0) y += 20;
 
                 const yC = y;
-                const hC = rowHeight * 5; // Altura do bloco (5 linhas)
+                const hC = rowHeight * 5;
 
                 doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke();
                 doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke();
@@ -156,7 +156,6 @@ async function generatePdfPromise(data) {
 
                  doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke();
                  doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke();
-                 // Ajustado posicionamento Y do texto vertical
                  doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj/2 + 10, 0, { width: hConj, align: 'center' }).restore();
 
                  const xConj_1 = fieldBoxX;
@@ -265,7 +264,7 @@ async function generatePdfPromise(data) {
             const temExclusividade = !isNaN(prazoNum) && prazoNum > 0;
             const xSim = xI_1 + 90;
             const xNao = xI_1 + 130;
-            const yCheck = yIRow + textYPad - 2; // Ajuste Y para alinhar com o texto
+            const yCheck = yIRow + textYPad - 2; // Ajuste Y
             const checkSize = 8;
 
             doc.rect(xSim, yCheck, checkSize, checkSize).stroke(); // Caixa SIM
@@ -275,19 +274,15 @@ async function generatePdfPromise(data) {
 
             // Desenha o "X" centralizado
             doc.font('Helvetica-Bold').fontSize(10);
-             // ==================================================
-             // CORREÇÃO: Posiciona o X no centro da caixa
-             // ==================================================
-            const xMarkOffset = checkSize / 2; // Metade do tamanho
-            const yMarkOffset = checkSize / 2; // Metade do tamanho
-            const markX = temExclusividade ? xSim + xMarkOffset : xNao + xMarkOffset;
-            const markY = yCheck + yMarkOffset;
-
-            // Calcula a largura/altura do 'X' para centralizar
-            const markWidth = doc.widthOfString('X');
-            const markHeight = doc.heightOfString('X');
-            doc.text('X', markX - markWidth / 2, markY - markHeight / 2 + 1); // +1 ajuste fino vertical
-            
+            const xMarkXOffset = checkSize / 2; // Metade horizontal
+            const xMarkYOffset = checkSize / 2 - 0.5; // Metade vertical ajustada
+            if (temExclusividade) {
+                // Desenha X no SIM
+                doc.path(`M ${xSim} ${yCheck} L ${xSim + checkSize} ${yCheck + checkSize} M ${xSim + checkSize} ${yCheck} L ${xSim} ${yCheck + checkSize}`).lineWidth(1.5).stroke();
+            } else {
+                 // Desenha X no NÃO
+                doc.path(`M ${xNao} ${yCheck} L ${xNao + checkSize} ${yCheck + checkSize} M ${xNao + checkSize} ${yCheck} L ${xNao} ${yCheck + checkSize}`).lineWidth(1.5).stroke();
+            }
             doc.fontSize(9); // Volta ao normal
 
             doc.font('Helvetica-Bold').text('Prazo de exclusividade:', xI_L6_2 + textPad, yIRow + textYPad);
@@ -367,7 +362,7 @@ async function generatePdfPromise(data) {
                  while (socioIndex < numSocios) {
                       sigY += 40; // Pula linha
                       for (let col = 0; col < 3 && socioIndex < numSocios; col++) {
-                          currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Calcula X da coluna
+                          currentSigX = MARGIN + col * (sigWidth + sigSpacing);
                           const prefix = `socio${socioIndex + 1}`;
                           drawSignature(data[`${prefix}Nome`] || `SÓCIO ${socioIndex + 1}`, data[`${prefix}Cpf`] || 'CPF/CNPJ', currentSigX, sigY);
                           socioIndex++;
