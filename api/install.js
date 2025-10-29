@@ -249,7 +249,9 @@ async function handlePostSelection(req, res) {
 
         let contratanteData = { nome: '', cpf: '', telefone: '', email: '' };
 
-        if (companyId) {
+        // Busca dados da empresa apenas se necessário (para solteiro, casado, socios_form)
+        // Não busca para socios_qtd, pois não preenchemos nada
+        if (companyId && authType !== 'socios_qtd') {
             console.log(`[Handler PostSelection] Buscando dados para Empresa ID: ${companyId}`);
             try {
                 const company = await call('crm.company.get', { id: companyId }, authTokens);
@@ -265,19 +267,19 @@ async function handlePostSelection(req, res) {
             } catch(companyError) {
                  console.error("[Handler PostSelection] Erro ao buscar dados da empresa:", companyError.message);
             }
-        } else {
+        } else if (authType !== 'socios_qtd') { // Só avisa se não for a tela de qtd
             console.warn("[Handler PostSelection] companyId não fornecido na query.");
         }
 
         // --- ROTEAMENTO DO FORMULÁRIO ---
+        res.setHeader('Content-Type', 'text/html'); // Define o header aqui para evitar repetição
+
         if (authType === 'solteiro' || authType === 'casado') {
             console.log(`[Handler PostSelection] Exibindo formulário para ${authType}.`);
-            res.setHeader('Content-Type', 'text/html');
             res.send(getFormHtml(authType, contratanteData));
 
         } else if (authType === 'socios_qtd') {
              console.log('[Handler PostSelection] Exibindo formulário para quantidade de sócios.');
-             res.setHeader('Content-Type', 'text/html');
              res.send(getSociosQtdHtml(companyId, authTokens.member_id));
 
         } else if (authType === 'socios_form' && req.query.qtd) {
@@ -286,7 +288,6 @@ async function handlePostSelection(req, res) {
                  return res.status(400).send('Quantidade de sócios inválida.');
              }
              console.log(`[Handler PostSelection] Exibindo formulário para ${numSocios} sócios.`);
-             res.setHeader('Content-Type', 'text/html');
              res.send(getFormHtml('socios', contratanteData, numSocios));
 
         } else {
@@ -411,7 +412,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         const cpf = (i === 0) ? contratanteData.cpf : '';
         const telefone = (i === 0) ? contratanteData.telefone : '';
         const email = (i === 0) ? contratanteData.email : '';
-        
+
         const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
 
         contratanteHtml += `
@@ -441,7 +442,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                             ${estadoCivilOptions}
                         </select>
                     </div>
-                    <div id="${prefix}RegimeDiv" style="display: none;">
+                    <div id="${prefix}RegimeDiv" style="display: none;"> {/* Oculto por padrão */}
                         <label>Regime de Casamento:</label>
                          <select name="${prefix}RegimeCasamento">
                             <option value="">Selecione...</option>
@@ -486,13 +487,13 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                     <label>Profissão:</label>
                     <input type="text" name="conjugeProfissao">
                 </div>
-                 <div class="grid-col-span-2"> 
+                 <div class="grid-col-span-2">
                      {/* Espaço vazio para alinhar */}
                     </div>
              </div>
         </div>
     ` : '';
-    
+
     // Formulário completo
     return `
         <!DOCTYPE html>
@@ -510,13 +511,13 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; align-items: start; }
                 div { margin-bottom: 0; }
                 label { display: block; margin-bottom: 6px; font-weight: 600; color: #555; font-size: 13px; }
-                input[type="text"], input[type="number"], input[type="email"], select { 
-                    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; height: 38px; 
+                input[type="text"], input[type="number"], input[type="email"], select {
+                    width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; box-sizing: border-box; height: 38px;
                 }
                 input:focus, select:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,.25); }
                 .grid-col-span-2 { grid-column: span 2; }
                 .grid-col-span-3 { grid-column: 1 / -1; }
-                
+
                 button { background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background-color 0.2s; }
                 button:hover { background-color: #0056b3; }
                  .button-container { text-align: center; margin-top: 20px; }
@@ -528,7 +529,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
             </style>
         </head>
         <body>
-            
+
             <form action="/api/generate-pdf" method="POST" target="_blank">
                  <h2>Gerar Autorização de Venda</h2>
                  <p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p>
@@ -563,7 +564,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
 
                 <div class="button-container"> <button type="submit">Gerar PDF</button> </div>
             </form>
-            
+
              <script src="//api.bitrix24.com/api/v1/"></script>
              <script>
                   // Função para mostrar/ocultar Regime de Casamento
@@ -578,13 +579,13 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                               regimeDiv.style.display = 'none';
                               // Limpa o valor do regime se não for aplicável
                               const regimeSelect = regimeDiv.querySelector('select');
-                              if(regimeSelect) regimeSelect.value = ''; 
+                              if(regimeSelect) regimeSelect.value = '';
                           }
                       }
                   }
 
                   document.addEventListener('DOMContentLoaded', function() {
-                      const numSociosJS = ${numSocios}; 
+                      const numSociosJS = ${numSocios};
                       for (let i = 0; i < numSociosJS; i++) {
                           const prefixJS = numSociosJS > 1 ? \`socio\${i+1}\` : 'contratante';
                           toggleRegime(prefixJS); // Chama para definir estado inicial
@@ -607,13 +608,13 @@ async function registerPlacement(handlerUrl, tokens) {
     }
     console.log(`[Install Register] Registrando/Atualizando placement para: ${handlerUrl}`);
 
-    const placementCode = 'CRM_COMPANY_DETAIL_TOOLBAR'; 
+    const placementCode = 'CRM_COMPANY_DETAIL_TOOLBAR';
     const placementTitle = 'Gerar Autorização PDF';
     const placementDescription = 'Gera PDF de autorização de vendas';
 
     console.log(`[Install Register] Limpando (${placementCode})...`);
     try {
-        await call('placement.unbind', { PLACEMENT: placementCode, HANDLER: handlerUrl }, tokens); 
+        await call('placement.unbind', { PLACEMENT: placementCode, HANDLER: handlerUrl }, tokens);
         console.log('[Install Register] Unbind ok.');
     } catch (unbindError) {
         const errorCode = unbindError.details?.code || unbindError.details?.error;
@@ -627,9 +628,9 @@ async function registerPlacement(handlerUrl, tokens) {
     console.log(`[Install Register] Registrando (${placementCode})...`);
     await call('placement.bind', {
         PLACEMENT: placementCode,
-        HANDLER: handlerUrl, 
+        HANDLER: handlerUrl,
         TITLE: placementTitle,
         DESCRIPTION: placementDescription
-    }, tokens); 
+    }, tokens);
     console.log('[Install Register] Botão registrado.');
 }
