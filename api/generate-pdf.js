@@ -28,7 +28,7 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath); 
 
         // Desenha o logo
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 200 });
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 200, valign: 'top' });
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
          // Fallback se o logo falhar
