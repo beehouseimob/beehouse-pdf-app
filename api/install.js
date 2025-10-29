@@ -441,7 +441,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                             ${estadoCivilOptions}
                         </select>
                     </div>
-                    <div id="${prefix}RegimeDiv" style="display: none;"> {/* Oculto por padrão */}
+                    <div id="${prefix}RegimeDiv" style="display: none;">
                         <label>Regime de Casamento:</label>
                          <select name="${prefix}RegimeCasamento">
                             <option value="">Selecione...</option>
