@@ -30,7 +30,6 @@ function drawHeader(doc) {
         // 1. Bloco da Esquerda (Logo + Nome)
         // O logo em 'image_a53028.png' é pequeno. Usando 60.
         doc.image(logoPath, MARGIN, MARGIN - 5, { width: 60 }); 
-        doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN + 70, MARGIN + 10);
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
