@@ -25,11 +25,13 @@ function drawHeader(doc) {
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg');
         console.log('Tentando carregar logo de:', logoPath);
 
-        // 1. Bloco da Esquerda (Logo)
-        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 160});
+        // 1. Bloco da Esquerda (Logo) - Usando tamanho 80 como antes
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 });
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
+         // Fallback texto se logo falhar
+         doc.font('Helvetica-Bold').fontSize(11).text('Beehouse', MARGIN, MARGIN + 10);
     }
 
     // 2. Bloco da Direita (Título, Nome, Endereço)
@@ -40,7 +42,7 @@ function drawHeader(doc) {
     doc.font('Helvetica-Bold').fontSize(11).text('Autorização de Venda', rightAlignX, initialY, { width: blockWidth, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, initialY + 12, { width: blockWidth, align: 'right' });
     doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, initialY + 24, { width: blockWidth, align: 'right' });
-    doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'left' });
+    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' });
 
     // Posição Y fixa após o header (mantendo espaço extra)
     doc.y = MARGIN + 65;
