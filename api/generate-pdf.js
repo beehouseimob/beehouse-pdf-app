@@ -95,7 +95,7 @@ async function generatePdfPromise(data) {
                 doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC/2, 0, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
-                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH) / 2;
                 let yRow = yC;
 
                 // Linha 1: nome / profissão
