@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         } else if (authType === 'socios_form' && req.query.qtd) {
              // 5. TIPO SÓCIOS (Passo 2): Mostra o formulário com campos repetidos
              const numSocios = parseInt(req.query.qtd, 10);
-             if (isNaN(numSocios) || numSocios < 2) {
+             if (isNaN(numSocios) || numSocios < 1) {
                  return res.status(400).send('Quantidade de sócios inválida.');
              }
              console.log(`[Handler] Exibindo formulário para ${numSocios} sócios.`);
