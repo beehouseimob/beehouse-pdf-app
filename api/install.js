@@ -1,32 +1,118 @@
 // /api/install.js
 import axios from 'axios';
+// Importa as funções do seu utils/b24.js
 import { saveTokens, call, getFreshTokens } from '../utils/b24.js';
 
-const CLIENT_ID = process.env.B_CLIENT_ID; // Corrigido para corresponder ao seu .env anterior
-const CLIENT_SECRET = process.env.B_CLIENT_SECRET; // Corrigido para corresponder ao seu .env anterior
+// Use as variáveis de ambiente corretas (verifique seu .env na Vercel)
+const CLIENT_ID = process.env.B24_CLIENT_ID || process.env.B_CLIENT_ID; 
+const CLIENT_SECRET = process.env.B24_CLIENT_SECRET || process.env.B_CLIENT_SECRET;
 
 export default async function handler(req, res) {
+    // Unifica query e body
     const params = { ...req.query, ...req.body };
     console.log('[Install/Router] Requisição recebida...');
     console.log('[Install/Router] Query Params:', req.query);
     console.log('[Install/Router] Body Params:', req.body);
 
     const domain = params.domain || params.DOMAIN;
-    const memberId = params.member_id || params.MEMBER_ID;
+    // Garante que member_id seja pego de qualquer fonte
+    const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id || req?.query?.member_id; 
     const placement = params.PLACEMENT;
+    const authId = params.AUTH_ID;
+    const code = params.code;
+    const appSid = req.query.APP_SID;
+    const authType = req.query.type; // Parâmetro para fluxo pós-seleção
 
-    // --- ROTEAMENTO CORRIGIDO ---
+    // --- ROTEAMENTO MAIS ROBUSTO ---
 
-    // PRIORIDADE 1: Fluxo OAuth padrão (code na query)
-    if (params.code && domain && memberId && !params.AUTH_ID) {
-        console.log('[Install] Detectado fluxo OAuth (code).');
-        try {
+    // PRIORIDADE 1: Fluxo de App Local (AUTH_ID é a chave)
+    if (authId && memberId && domain) {
+        console.log('[Install] Detectado fluxo de App Local (AUTH_ID presente).');
+        await handleLocalInstall(req, res, params); 
+    }
+    // PRIORIDADE 2: Fluxo OAuth (code é a chave, sem AUTH_ID)
+    else if (code && domain && memberId && !authId) {
+        console.log('[Install] Detectado fluxo OAuth (code presente).');
+        await handleOAuthInstall(req, res, params);
+    }
+    // PRIORIDADE 3: Clique no Botão (PLACEMENT específico, SEM AUTH_ID e SEM code)
+    else if (placement && placement === 'CRM_COMPANY_DETAIL_TOOLBAR' && !authId && !code) {
+        console.log('[Router] Detectado clique no botão CRM_COMPANY_DETAIL_TOOLBAR.');
+        if (!memberId) {
+             console.error('[Router] member_id não encontrado para clique de botão.');
+             return res.status(400).send('Erro: Identificação do membro ausente.');
+        }
+        await handlePlacementClick(req, res); // Mostra tela de seleção
+    }
+    // PRIORIDADE 4: Requisição Pós-Seleção (parâmetro 'type', SEM PLACEMENT)
+    else if (authType && memberId && !placement && !authId && !code) {
+         console.log(`[Router] Detectada requisição pós-seleção (type=${authType}).`);
+         await handlePostSelection(req, res); // Mostra formulário correto
+    }
+    // PRIORIDADE 5: Chamada inicial de verificação (APP_SID, sem outros identificadores)
+    else if (appSid && !authId && !code && !placement && !authType) {
+        console.log('[Install] Detectada chamada inicial de verificação (APP_SID).');
+        res.status(200).send('Endpoint de instalação acessível.');
+    }
+    // FLUXO NÃO RECONHECIDO
+    else {
+        console.warn('[Install] Parâmetros não correspondem a OAuth, App Local, Clique de Botão, Pós-Seleção ou Verificação Inicial.', params);
+        res.status(400).send('Tipo de requisição não reconhecida.');
+    }
+}
+
+// ==================================================================
+// FUNÇÃO PARA INSTALAÇÃO/ATUALIZAÇÃO LOCAL
+// ==================================================================
+async function handleLocalInstall(req, res, params) {
+    const domain = params.domain || params.DOMAIN;
+    const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id;
+
+    try {
+        const tokens = {
+            access_token: params.AUTH_ID,
+            refresh_token: params.REFRESH_ID,
+            expires_in: params.AUTH_EXPIRES ? Math.floor(Date.now() / 1000) + parseInt(params.AUTH_EXPIRES, 10) : Math.floor(Date.now() / 1000) + 3600,
+            domain: domain,
+            member_id: memberId 
+        };
+
+        if (!tokens.access_token) throw new Error('access_token ausente no fluxo de App Local.');
+        if (!tokens.member_id) throw new Error('member_id ausente no fluxo de App Local.');
+       
+        console.log('[Install Local App] Salvando tokens para member_id:', tokens.member_id);
+        await saveTokens(tokens); 
+        console.log('[Install Local App] Tokens salvos com sucesso.');
+
+        const handlerUrl = `https://${req.headers.host}/api/install`; 
+        await registerPlacement(handlerUrl, tokens);
+
+        console.log('[Install Local App] Instalação/Atualização concluída.');
+        res.setHeader('Content-Type', 'text/html');
+        res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
+
+    } catch (error) {
+        console.error('[Install Local App] ERRO:', error.response?.data || error.details || error.message || error);
+        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido';
+        res.status(500).send(`Erro durante a instalação (App Local): ${errorMessage}`);
+    }
+}
+
+// ==================================================================
+// FUNÇÃO PARA INSTALAÇÃO OAUTH
+// ==================================================================
+async function handleOAuthInstall(req, res, params) {
+     const domain = params.domain;
+     const memberId = params.member_id;
+     const code = params.code;
+
+     try {
             const tokenUrl = `https://${domain}/oauth/token/`;
             const tokenParams = {
                 grant_type: 'authorization_code',
                 client_id: CLIENT_ID,
                 client_secret: CLIENT_SECRET,
-                code: params.code
+                code: code
             };
             console.log(`[Install OAuth] Solicitando tokens de: ${tokenUrl}`);
             const response = await axios.post(tokenUrl, null, { params: tokenParams });
@@ -36,7 +122,6 @@ export default async function handler(req, res) {
             const tokens = {
                 access_token: tokenData.access_token,
                 refresh_token: tokenData.refresh_token,
-                // expires_in é timestamp UNIX de expiração
                 expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in, 
                 domain: tokenData.domain,
                 member_id: tokenData.member_id
@@ -49,87 +134,39 @@ export default async function handler(req, res) {
             await saveTokens(tokens);
             console.log('[Install OAuth] Tokens salvos para member_id:', tokens.member_id);
 
-            const handlerUrl = `https://${req.headers.host}/api/install`; // Handler principal
+            const handlerUrl = `https://${req.headers.host}/api/install`; 
             await registerPlacement(handlerUrl, tokens); 
 
             console.log('[Install OAuth] Instalação concluída.');
             res.setHeader('Content-Type', 'text/html');
-            res.send('<head><script>top.BX.closeApplication();</script></head><body>Instalado com sucesso (OAuth)! Feche esta janela.</body>');
+            res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado! Fechando...</body>');
         } catch (error) {
-            console.error('[Install OAuth] ERRO DURANTE O FLUXO OAUTH:', error.response?.data || error.message || error);
+            console.error('[Install OAuth] ERRO:', error.response?.data || error.message || error);
             const errorMessage = error.response?.data?.error_description || error.message || 'Erro desconhecido';
             res.status(500).send(`Erro durante a instalação (OAuth): ${errorMessage}`);
         }
-    }
-    // PRIORIDADE 2: Fluxo de App Local (AUTH_ID no body - pode vir com PLACEMENT: 'DEFAULT')
-    else if (params.AUTH_ID && memberId && domain) {
-        console.log('[Install] Detectado fluxo de App Local (AUTH_ID). Placement:', placement);
-        try {
-            const tokens = {
-                access_token: params.AUTH_ID,
-                refresh_token: params.REFRESH_ID,
-                // expires_in é timestamp UNIX de expiração
-                expires_in: params.AUTH_EXPIRES ? Math.floor(Date.now() / 1000) + parseInt(params.AUTH_EXPIRES, 10) : Math.floor(Date.now() / 1000) + 3600,
-                domain: domain,
-                member_id: memberId 
-            };
-
-            if (!tokens.access_token) {
-                throw new Error('access_token ausente no fluxo de App Local.');
-            }
-
-            console.log('[Install Local App] Salvando tokens para member_id:', tokens.member_id);
-            await saveTokens(tokens); 
-            console.log('[Install Local App] Tokens salvos com sucesso.');
-
-            // Registra/atualiza o botão (placement) APÓS salvar os tokens
-            const handlerUrl = `https://${req.headers.host}/api/install`; // Handler principal
-            await registerPlacement(handlerUrl, tokens);
-
-            console.log('[Install Local App] Instalação/Atualização concluída.');
-            res.setHeader('Content-Type', 'text/html');
-            // Fechar a janela SÓ SE for o placement 'DEFAULT' (instalação), não no clique do botão
-             if (placement === 'DEFAULT') {
-                 res.send('<head><script>top.BX.closeApplication();</script></head><body>Instalado/Atualizado com sucesso (App Local)!</body>');
-             } else {
-                 // Se por algum motivo chegou aqui sem ser DEFAULT (improvável com a nova lógica),
-                 // apenas confirma que rodou.
-                 res.send('Processado (App Local, non-default)');
-             }
-        } catch (error) {
-            console.error('[Install Local App] ERRO DURANTE O FLUXO:', error.response?.data || error.details || error.message || error);
-            const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido';
-            res.status(500).send(`Erro durante a instalação (App Local): ${errorMessage}`);
-        }
-    }
-    // PRIORIDADE 3: Clique no botão (PLACEMENT específico)
-    else if (placement && placement === 'CRM_COMPANY_DETAIL_TOOLBAR') {
-        console.log('[Router] Detectado clique no botão CRM_COMPANY_DETAIL_TOOLBAR.');
-        // Chama a função que lida com o clique do botão (antigo /api/handler)
-        await handlePlacementClick(req, res); 
-    }
-     // PRIORIDADE 4: Chamada inicial de verificação (APP_SID na query)
-    else if (req.query.APP_SID && !params.AUTH_ID && !params.code && !placement) {
-        console.log('[Install] Detectada chamada inicial de verificação (APP_SID).');
-        res.status(200).send('Endpoint de instalação acessível.');
-    }
-    // FLUXO NÃO RECONHECIDO
-    else {
-        console.warn('[Install] Parâmetros não correspondem a OAuth, App Local, Clique de Botão ou Verificação Inicial.', params);
-        res.status(400).send('Tipo de requisição não reconhecida.');
-    }
 }
 
 // ==================================================================
-// Função que lida com o clique no botão (era o antigo /api/handler.js)
+// Função que lida com o clique no botão (mostra seleção)
 // ==================================================================
 async function handlePlacementClick(req, res) {
     console.log('[Handler] Clique de botão (CRM_COMPANY_DETAIL_TOOLBAR) iniciado.');
-    // Nota: req.body já está mesclado com req.query no início do handler principal
+    
+    // Precisamos garantir member_id para getFreshTokens e para construir URLs
+    const memberId = req?.body?.member_id || req?.body?.auth?.member_id || req?.query?.member_id;
+    if (!memberId) {
+        console.error('[Handler] member_id não encontrado na requisição do placement.');
+        return res.status(400).send('Erro: Identificação do membro ausente.');
+    }
+    
+    const simulatedReqForTokens = { 
+        body: req.body, 
+        query: { ...req.query, member_id: memberId } 
+    };
 
     try {
-        // 1. Obtém tokens frescos (getFreshTokens extrai member_id)
-        const authTokens = await getFreshTokens(req); 
+        const authTokens = await getFreshTokens(simulatedReqForTokens); 
 
         if (!authTokens) {
             console.error('[Handler] Falha ao obter/renovar tokens de autenticação.');
@@ -137,7 +174,6 @@ async function handlePlacementClick(req, res) {
         }
         console.log('[Handler] Tokens obtidos/renovados com sucesso para member_id:', authTokens.member_id);
 
-        // 2. Pega o ID da Empresa do PLACEMENT_OPTIONS
         let companyId;
         if (req.body.PLACEMENT_OPTIONS) {
             try {
@@ -145,7 +181,7 @@ async function handlePlacementClick(req, res) {
                 companyId = placementOptions.ID; 
                 console.log('[Handler] ID da Empresa extraído de PLACEMENT_OPTIONS:', companyId);
             } catch (parseError) {
-                console.error("[Handler] Erro ao parsear PLACEMENT_OPTIONS:", parseError, "Conteúdo:", req.body.PLACEMENT_OPTIONS);
+                console.error("[Handler] Erro ao parsear PLACEMENT_OPTIONS:", parseError);
                 return res.status(400).send('Erro ao processar dados do placement (JSON inválido).');
             }
         }
@@ -155,30 +191,106 @@ async function handlePlacementClick(req, res) {
             return res.status(400).send('ID da Empresa não encontrado na requisição do placement.');
         }
 
-        // 3. Busca os dados da Empresa (se necessário - para pré-preencher)
-        // Você pode decidir buscar os dados aqui ou deixar a próxima etapa fazer isso
-        
-        // 4. Exibe a tela de SELEÇÃO, passando companyId e member_id
+        // Exibe a tela de SELEÇÃO, passando companyId e member_id
         console.log('[Handler] Exibindo tela de seleção.');
         res.setHeader('Content-Type', 'text/html');
-        // Chama a função que gera o HTML da tela de seleção
         res.send(getSelectionHtml(companyId, authTokens.member_id)); 
 
     } catch (error) {
         console.error('[Handler] Erro detalhado no handlePlacementClick:', error.response?.data || error.details || error.message || error);
-        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido ao processar clique do botão';
+        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido';
         const errorStatus = error.status || 500;
-        res.status(errorStatus).send(`Erro ao carregar formulário: ${errorMessage}`);
+        res.status(errorStatus).send(`Erro ao carregar seleção: ${errorMessage}`);
     }
 }
 
 // ==================================================================
-// FUNÇÕES AUXILIARES DE HTML (Movidas de /api/handler.js)
+// Função que lida com a requisição APÓS a seleção (mostra formulário)
+// ==================================================================
+async function handlePostSelection(req, res) {
+    const authType = req.query.type;
+    const companyId = req.query.companyId;
+    const memberId = req.query.member_id; // Essencial para getFreshTokens
+
+    console.log(`[Handler PostSelection] Recebido type=${authType}, companyId=${companyId}, memberId=${memberId}`);
+
+     if (!memberId) {
+        console.error('[Handler PostSelection] member_id ausente na query.');
+        return res.status(400).send('Erro: Identificação do membro ausente.');
+    }
+
+    const simulatedReqForTokens = { 
+        body: {}, // Body vazio, pois não é placement
+        query: { ...req.query } // Passa toda a query (incluindo member_id)
+    };
+
+    try {
+        const authTokens = await getFreshTokens(simulatedReqForTokens);
+        if (!authTokens) {
+            console.error('[Handler PostSelection] Falha ao obter/renovar tokens.');
+            return res.status(401).send('Erro: Falha na autenticação ou tokens inválidos.');
+        }
+
+        let contratanteData = { nome: '', cpf: '', telefone: '', email: '' };
+
+        if (companyId) {
+            console.log(`[Handler PostSelection] Buscando dados para Empresa ID: ${companyId}`);
+            try {
+                const company = await call('crm.company.get', { id: companyId }, authTokens);
+                if (company) {
+                    contratanteData.nome = company.TITLE || '';
+                    contratanteData.telefone = (company.PHONE && company.PHONE.length > 0) ? company.PHONE[0].VALUE : '';
+                    contratanteData.email = (company.EMAIL && company.EMAIL.length > 0) ? company.EMAIL[0].VALUE : '';
+                    contratanteData.cpf = company.UF_CRM_66C37392C9F3D || ''; 
+                    console.log('[Handler PostSelection] Dados da empresa carregados:', contratanteData);
+                } else {
+                     console.warn("[Handler PostSelection] Empresa não encontrada com ID:", companyId);
+                }
+            } catch(companyError) {
+                 console.error("[Handler PostSelection] Erro ao buscar dados da empresa:", companyError.message);
+            }
+        } else {
+            console.warn("[Handler PostSelection] companyId não fornecido na query.");
+        }
+
+        // --- ROTEAMENTO DO FORMULÁRIO ---
+        if (authType === 'solteiro' || authType === 'casado') {
+            console.log(`[Handler PostSelection] Exibindo formulário para ${authType}.`);
+            res.setHeader('Content-Type', 'text/html');
+            res.send(getFormHtml(authType, contratanteData));
+
+        } else if (authType === 'socios_qtd') {
+             console.log('[Handler PostSelection] Exibindo formulário para quantidade de sócios.');
+             res.setHeader('Content-Type', 'text/html');
+             res.send(getSociosQtdHtml(companyId, authTokens.member_id)); 
+
+        } else if (authType === 'socios_form' && req.query.qtd) {
+             const numSocios = parseInt(req.query.qtd, 10);
+             if (isNaN(numSocios) || numSocios < 2) {
+                 return res.status(400).send('Quantidade de sócios inválida.');
+             }
+             console.log(`[Handler PostSelection] Exibindo formulário para ${numSocios} sócios.`);
+             res.setHeader('Content-Type', 'text/html');
+             res.send(getFormHtml('socios', contratanteData, numSocios)); 
+        
+        } else {
+            console.warn('[Handler PostSelection] Tipo inválido:', authType);
+            res.status(400).send('Tipo de autorização inválido.');
+        }
+
+    } catch (error) {
+        console.error('[Handler PostSelection] Erro geral:', error.response?.data || error.details || error.message || error);
+        const errorMessage = error.details?.error_description || error.message || 'Erro desconhecido';
+        res.status(500).send(`Erro: ${errorMessage}`);
+    }
+}
+
+// ==================================================================
+// FUNÇÕES AUXILIARES DE HTML 
 // ==================================================================
 
 // HTML da tela de seleção inicial
 function getSelectionHtml(companyId, memberId) {
-    // Constrói os links mantendo companyId e memberId
     // APONTA PARA SI MESMO (/api/install) com o parâmetro 'type'
     const buildUrl = (type) => `/api/install?type=${type}${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
     
@@ -189,7 +301,7 @@ function getSelectionHtml(companyId, memberId) {
             <meta charset="UTF-8">
             <title>Selecionar Tipo de Autorização</title>
              <style>
-                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; min-height: 90vh; /* Ajustado para evitar barra de rolagem se possível */ }
+                body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 24px; background-color: #f9f9f9; display: flex; justify-content: center; align-items: center; min-height: 90vh; }
                 .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 100%;}
                 h2 { color: #333; margin-top: 0; margin-bottom: 25px; font-size: 1.3em;}
                 a { display: block; background-color: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; text-decoration: none; margin-bottom: 15px; font-weight: bold; transition: background-color 0.2s; }
@@ -207,13 +319,7 @@ function getSelectionHtml(companyId, memberId) {
             </div>
              <script src="//api.bitrix24.com/api/v1/"></script>
              <script>
-                 // Se esta janela foi aberta pelo placement, ajusta o título
-                 if (window.BX) {
-                     BX.ready(function() {
-                         BX.resizeWindow(600, 400); // Ajusta tamanho da janela
-                         BX.setTitle('Selecionar Tipo de Autorização'); 
-                     });
-                 }
+                 if (window.BX) { BX.ready(function() { BX.resizeWindow(600, 400); BX.setTitle('Selecionar Tipo'); }); }
              </script>
         </body>
         </html>
@@ -244,19 +350,14 @@ function getSociosQtdHtml(companyId, memberId) {
             <div class="container">
                 <h2>Imóvel de Sócios</h2>
                  <form action="${formAction}" method="GET">
-                     <label for="qtd">Quantos sócios são proprietários do imóvel?</label>
+                     <label for="qtd">Quantos sócios são proprietários?</label>
                      <input type="number" id="qtd" name="qtd" min="2" value="2" required>
                      <button type="submit">Continuar</button>
                  </form>
              </div>
               <script src="//api.bitrix24.com/api/v1/"></script>
-             <script>
-                 if (window.BX) {
-                     BX.ready(function() {
-                         BX.resizeWindow(600, 400); // Ajusta tamanho da janela
-                         BX.setTitle('Quantidade de Sócios'); 
-                     });
-                 }
+              <script>
+                   if (window.BX) { BX.ready(function() { BX.resizeWindow(600, 400); BX.setTitle('Qtd Sócios'); }); }
              </script>
          </body>
         </html>
@@ -453,13 +554,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
             </form>
              <script src="//api.bitrix24.com/api/v1/"></script>
              <script>
-                  if (window.BX) {
-                     BX.ready(function() {
-                         // Tenta redimensionar a janela para acomodar formulários maiores
-                         BX.resizeWindow(window.innerWidth > 850 ? 850 : window.innerWidth, 700); 
-                         BX.setTitle('Gerar Autorização de Venda'); 
-                     });
-                 }
+                  if (window.BX) { BX.ready(function() { BX.resizeWindow(window.innerWidth > 850 ? 850 : window.innerWidth, 700); BX.setTitle('Gerar Autorização'); }); }
              </script>
         </body>
         </html>
@@ -471,40 +566,34 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
 // ==================================================================
 async function registerPlacement(handlerUrl, tokens) {
     if (!tokens || !tokens.access_token) {
-        console.error('[Install Register] Tentativa de registrar placement sem tokens válidos.');
-        throw new Error('Tokens inválidos ou ausentes para registrar o placement.');
+        console.error('[Install Register] Tokens inválidos.');
+        throw new Error('Tokens inválidos para registrar placement.');
     }
     console.log(`[Install Register] Registrando/Atualizando placement para: ${handlerUrl}`);
 
-    const placementCode = 'CRM_COMPANY_DETAIL_TOOLBAR'; // Código do botão
+    const placementCode = 'CRM_COMPANY_DETAIL_TOOLBAR'; 
     const placementTitle = 'Gerar Autorização PDF';
     const placementDescription = 'Gera PDF de autorização de vendas';
 
-    console.log(`[Install Register] Limpando botão antigo (${placementCode})...`);
+    console.log(`[Install Register] Limpando (${placementCode})...`);
     try {
-        await call('placement.unbind', {
-            PLACEMENT: placementCode,
-            HANDLER: handlerUrl
-        }, tokens); 
-        console.log('[Install Register] Unbind (limpeza) concluído.');
+        await call('placement.unbind', { PLACEMENT: placementCode, HANDLER: handlerUrl }, tokens); 
+        console.log('[Install Register] Unbind ok.');
     } catch (unbindError) {
         const errorCode = unbindError.details?.code || unbindError.details?.error;
-        // Ignora apenas o erro específico de não encontrar o handler antigo
         if (errorCode !== 'PLACEMENT_HANDLER_NOT_FOUND' && errorCode !== 'ERROR_PLACEMENT_HANDLER_NOT_FOUND') {
-           console.warn("[Install Register] Erro durante o unbind:", unbindError.message);
-           // Considera relançar o erro se for crítico
-           // throw unbindError; 
+           console.warn("[Install Register] Erro unbind:", unbindError.message);
         } else {
            console.log("[Install Register] Handler antigo não encontrado (ok).");
         }
     }
 
-    console.log(`[Install Register] Registrando novo botão (${placementCode})...`);
+    console.log(`[Install Register] Registrando (${placementCode})...`);
     await call('placement.bind', {
         PLACEMENT: placementCode,
-        HANDLER: handlerUrl, // O handler principal agora lida com cliques
+        HANDLER: handlerUrl, 
         TITLE: placementTitle,
         DESCRIPTION: placementDescription
     }, tokens); 
-    console.log('[Install Register] Botão registrado com sucesso.');
+    console.log('[Install Register] Botão registrado.');
 }
