@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 
 // --- HELPERS BÁSICOS ---
 function formatCurrency(value) {
-    // Retorna string vazia se inválido, para não imprimir 'N/A' nas caixas
+    // Retorna string vazia se inválido
     if (!value || isNaN(value)) return '';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
@@ -16,42 +16,43 @@ const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 // ==================================================================
-// FUNÇÃO DE HEADER (CORRIGIDA)
+// FUNÇÃO DE HEADER CORRIGIDA (Layout como image_a53028.png / image_237196.png)
 // ==================================================================
 function drawHeader(doc) {
     try {
-        // --- Constrói o caminho correto para o logo ---
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
         const logoPath = path.join(__dirname, '..', 'images', 'logo.jpeg');
         console.log('Tentando carregar logo de:', logoPath);
 
-        // Logo pequeno na esquerda
+        // 1. Bloco da Esquerda (Logo) - Usando tamanho 80 como antes
         doc.image(logoPath, MARGIN, MARGIN - 5, { width: 80 });
-        doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN + 90, MARGIN + 10); // Ajustado X
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
-         doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', MARGIN, MARGIN + 10);
+         // Fallback texto se logo falhar
+         doc.font('Helvetica-Bold').fontSize(11).text('Beehouse', MARGIN, MARGIN + 10);
     }
 
-    // Título Central
-    doc.font('Helvetica-Bold').fontSize(12).text('Autorização de Venda', MARGIN, MARGIN + 25, { width: CONTENT_WIDTH, align: 'center' });
+    // 2. Bloco da Direita (Título, Nome, Endereço)
+    const rightAlignX = PAGE_WIDTH - MARGIN - 250; // Posição X do bloco
+    const blockWidth = 250; // Largura do bloco
+    const initialY = MARGIN - 5; // Posição Y inicial (um pouco acima da margem)
 
-    // Bloco da Direita
-    const rightAlignX = PAGE_WIDTH - MARGIN - 250;
-    // doc.font('Helvetica-Bold').fontSize(11).text('Autorização de venda', rightAlignX, MARGIN, { width: 250, align: 'right' }); // Removido
-    doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, MARGIN + 12, { width: 250, align: 'right' });
-    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, MARGIN + 24, { width: 250, align: 'right' });
-    doc.text('www.beehouse.sc | Fone: (47) 99287-9066', rightAlignX, MARGIN + 36, { width: 250, align: 'right' });
+    // Ajustado para BOLD e tamanho 11
+    doc.font('Helvetica-Bold').fontSize(11).text('Autorização de Venda', rightAlignX, initialY, { width: blockWidth, align: 'right' });
+    doc.font('Helvetica-Bold').fontSize(11).text('Beehouse Investimentos Imobiliários', rightAlignX, initialY + 12, { width: blockWidth, align: 'right' });
+    doc.font('Helvetica').fontSize(9).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, initialY + 24, { width: blockWidth, align: 'right' });
+    // Corrigido para .imb.br como no código anterior
+    doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' });
 
-    // Mais espaço abaixo
+    // Posição Y fixa após o header (mantendo espaço extra)
     doc.y = MARGIN + 65;
 }
 
 
 // ==================================================================
-// FUNÇÃO DE GERAÇÃO DE PDF (COM CHECKBOX E ASSINATURAS CONDICIONAIS CORRIGIDAS)
+// FUNÇÃO DE GERAÇÃO DE PDF (COM CHECKBOX CORRIGIDO)
 // ==================================================================
 async function generatePdfPromise(data) {
 
@@ -78,7 +79,7 @@ async function generatePdfPromise(data) {
 
             // --- LÓGICA CONDICIONAL PARA CONTRATANTES ---
             const authType = data.authType;
-            const numSocios = parseInt(data.numSocios, 10) || 1; // Pega do form
+            const numSocios = parseInt(data.numSocios, 10) || 1;
 
             for (let i = 0; i < numSocios; i++) {
                 const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
@@ -125,7 +126,6 @@ async function generatePdfPromise(data) {
                 doc.font('Helvetica-Bold').fontSize(9).text('Estado Civil:', xC_1 + textPad, yRow + textYPad);
                 labelWidth = doc.widthOfString('Estado Civil:');
                 doc.font('Helvetica').fontSize(9).text(data[`${prefix}EstadoCivil`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
-                // Só mostra o Regime se foi preenchido
                 if (data[`${prefix}RegimeCasamento`]) {
                     doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
                     labelWidth = doc.widthOfString('Regime de Casamento:');
@@ -146,14 +146,13 @@ async function generatePdfPromise(data) {
                 doc.font('Helvetica').fontSize(9).text(data[`${prefix}Email`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
 
                 y = yRow + rowHeight;
-            } // Fim do loop de sócios/contratante
+            } // Fim loop contratante/sócio
 
              // --- Bloco CÔNJUGE (se authType for 'casado') ---
              if (authType === 'casado') {
                  y += 15;
                  const yConj = y;
-                 // Altura aumentada para caber texto vertical
-                 const hConj = rowHeight * 2.5;
+                 const hConj = rowHeight * 2.5; // Altura aumentada
 
                  doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke();
                  doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke();
@@ -172,24 +171,21 @@ async function generatePdfPromise(data) {
                  doc.font('Helvetica-Bold').fontSize(9).text('Nome:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Nome:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeNome || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
-
                  doc.font('Helvetica-Bold').fontSize(9).text('CPF:', xConj_2 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('CPF:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeCpf || '', xConj_2 + textPad + labelWidth + textPad, yRowConj + textYPad);
-
                  doc.font('Helvetica-Bold').fontSize(9).text('RG:', xConj_3 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('RG:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeRg || '', xConj_3 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  yRowConj += rowHeight;
 
-                 // Linha 2 Cônjuge: Profissão (Span all)
-                 // Desenha linha inferior manualmente por causa da altura extra
-                 doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke();
+                 // Linha 2 Cônjuge: Profissão
+                 doc.moveTo(fieldBoxX, yConj + hConj).lineTo(endX, yConj + hConj).stroke(); // Desenha linha inferior
                  doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Profissão:');
                  doc.font('Helvetica').fontSize(9).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
 
-                 y = yConj + hConj; // Usa a altura total da caixa
+                 y = yConj + hConj; // Usa a altura total
              }
 
 
@@ -259,7 +255,7 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(9).text(data.imovelNumParcelas || '', xI_L5_3 + textPad + labelWidth + textPad, yIRow + textYPad);
             yIRow += rHI;
 
-            // --- Linha 6 (Exclusividade, Prazo - COM LÓGICA DO CHECKBOX CORRIGIDA) ---
+            // --- Linha 6 (Exclusividade, Prazo - COM CHECKBOX CORRIGIDO) ---
             const xI_L6_2 = fieldBoxX + 220;
             doc.moveTo(xI_L6_2, yIRow).lineTo(xI_L6_2, yIRow + rHI).stroke(); // V
             doc.font('Helvetica-Bold').fontSize(9).text('Exclusividade(*):', xI_1 + textPad, yIRow + textYPad);
@@ -269,7 +265,7 @@ async function generatePdfPromise(data) {
             const temExclusividade = !isNaN(prazoNum) && prazoNum > 0;
             const xSim = xI_1 + 90;
             const xNao = xI_1 + 130;
-            const yCheck = yIRow + textYPad - 2;
+            const yCheck = yIRow + textYPad - 2; // Ajuste Y para alinhar com o texto
             const checkSize = 8;
 
             doc.rect(xSim, yCheck, checkSize, checkSize).stroke(); // Caixa SIM
@@ -277,13 +273,21 @@ async function generatePdfPromise(data) {
             doc.rect(xNao, yCheck, checkSize, checkSize).stroke(); // Caixa NÃO
             doc.font('Helvetica').fontSize(9).text('NÃO', xNao + checkSize + 2, yIRow + textYPad);
 
-            // Desenha o "X"
+            // Desenha o "X" centralizado
             doc.font('Helvetica-Bold').fontSize(10);
-            if (temExclusividade) {
-                doc.text('X', xSim + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' });
-            } else {
-                doc.text('X', xNao + 1, yCheck - 1, { width: checkSize, height: checkSize, align: 'center' }); // Correto agora
-            }
+             // ==================================================
+             // CORREÇÃO: Posiciona o X no centro da caixa
+             // ==================================================
+            const xMarkOffset = checkSize / 2; // Metade do tamanho
+            const yMarkOffset = checkSize / 2; // Metade do tamanho
+            const markX = temExclusividade ? xSim + xMarkOffset : xNao + xMarkOffset;
+            const markY = yCheck + yMarkOffset;
+
+            // Calcula a largura/altura do 'X' para centralizar
+            const markWidth = doc.widthOfString('X');
+            const markHeight = doc.heightOfString('X');
+            doc.text('X', markX - markWidth / 2, markY - markHeight / 2 + 1); // +1 ajuste fino vertical
+            
             doc.fontSize(9); // Volta ao normal
 
             doc.font('Helvetica-Bold').text('Prazo de exclusividade:', xI_L6_2 + textPad, yIRow + textYPad);
@@ -351,17 +355,14 @@ async function generatePdfPromise(data) {
                 drawSignature(data.conjugeNome || 'CÔNJUGE', data.conjugeCpf || 'CPF/CNPJ', currentSigX, sigY);
 
             } else if (authType === 'socios') {
-                 // Sócio 1 na segunda posição
                  currentSigX = MARGIN + sigWidth + sigSpacing; // Coluna 2
                  drawSignature(data.socio1Nome || 'SÓCIO 1', data.socio1Cpf || 'CPF/CNPJ', currentSigX, sigY);
 
-                 // Sócio 2 na terceira posição (se houver)
                  if (numSocios >= 2) {
                     currentSigX = MARGIN + 2 * (sigWidth + sigSpacing); // Coluna 3
                     drawSignature(data.socio2Nome || 'SÓCIO 2', data.socio2Cpf || 'CPF/CNPJ', currentSigX, sigY);
                  }
 
-                 // Próximos sócios em novas linhas
                  let socioIndex = 2;
                  while (socioIndex < numSocios) {
                       sigY += 40; // Pula linha
