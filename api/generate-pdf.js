@@ -331,15 +331,15 @@ async function generatePdfPromise(data) {
 
             // --- 4. Assinaturas (CONDICIONAL - Layout 2 Colunas) ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y);
-            doc.font('Helvetica').fontSize(9).text(`Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
+            doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { continued: true});
+            doc.font('Helvetica').fontSize(9).text(` Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
 
-            let sigY = doc.y + 40;
+            let sigY = doc.y + 80;
 
             // ==================================================
             // CORREÇÃO: Grid de 2 colunas para assinaturas
             // ==================================================
-            const sigWidth = 220; // Largura maior para 2 colunas
+            const sigWidth = 240; // Largura maior para 2 colunas
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); // Espaço entre
             let currentSigX = MARGIN;
 
@@ -362,7 +362,7 @@ async function generatePdfPromise(data) {
                 drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
                 
                 // Cônjuge (Coluna 1, Linha 2)
-                sigY += 40; // Próxima linha
+                sigY += 80; // Próxima linha
                 currentSigX = MARGIN;
                 drawSignature(data.conjugeNome || 'CÔNJUGE', data.conjugeCpf || 'CPF/CNPJ', currentSigX, sigY);
 
@@ -373,7 +373,7 @@ async function generatePdfPromise(data) {
                  
                  let socioIndex = 1; // Começa do Sócio 2 (índice 1)
                  while (socioIndex < numSocios) {
-                      sigY += 40; // Próxima linha
+                      sigY += 80; // Próxima linha
                       for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
                           currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Col 1 ou Col 2
                           const prefix = `socio${socioIndex + 1}`;
