@@ -408,10 +408,10 @@ async function generatePdfPromise(data) {
                 );
 
             } else if (authType === 'socios') {
-                // Sócio 1 (Coluna 2, Linha 1)
+                // Sócio 1 (Coluna 2, Linha 1) - Renomeado para CONTRATANTE
                 currentSigX = MARGIN_LEFT + sigWidth + sigSpacing;
                 drawSignature(
-                    'SÓCIO 1', 
+                    'CONTRATANTE', // Sócio 1 é o Contratante principal
                     data.socio1Nome || 'NOME SÓCIO 1', 
                     `CPF/CNPJ: ${data.socio1Cpf}` || 'CPF/CNPJ', 
                     currentSigX,
@@ -419,21 +419,25 @@ async function generatePdfPromise(data) {
                 );
                 
                 let socioIndex = 1; // Começa do Sócio 2 (índice 1)
+                
+                // Loop para os sócios restantes, TODOS na coluna da direita
                 while (socioIndex < numSocios) {
-                    sigY += sigBlockHeight + 10; // Aumentei o espaçamento entre as linhas de assinatura
-                    for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
-                        currentSigX = MARGIN_LEFT + col * (sigWidth + sigSpacing); // Col 1 (0) ou Col 2 (1)
-                        const prefix = `socio${socioIndex + 1}`;
-                        
-                        drawSignature(
-                            `SÓCIO ${socioIndex + 1}`, 
-                            data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
-                            `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
-                            currentSigX, 
-                            sigY
-                        );
-                        socioIndex++;
-                    }
+                    // Aumenta o Y para a próxima linha de assinatura
+                    sigY += sigBlockHeight + 10; 
+                    
+                    // Força o X a ser sempre na coluna da direita
+                    currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; 
+                    
+                    const prefix = `socio${socioIndex + 1}`;
+                    
+                    drawSignature(
+                        `SÓCIO ${socioIndex + 1}`, 
+                        data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
+                        `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
+                        currentSigX, 
+                        sigY
+                    );
+                    socioIndex++;
                 }
 
             } else { // Solteiro / Viúvo
