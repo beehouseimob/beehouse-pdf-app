@@ -359,7 +359,7 @@ async function generatePdfPromise(data) {
 
             const sigWidth = 240; // Largura de cada bloco de assinatura
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
-            const sigBlockHeight = 60; // Altura de CADA bloco de assinatura
+            const sigBlockHeight = 55; // Altura de CADA bloco de assinatura
             const sigYMargin = 25; // Espaço vertical entre assinaturas
             // Ajuste no pageBottom para usar a margem correta
             const pageBottom = doc.page.height - doc.page.margins.bottom; 
