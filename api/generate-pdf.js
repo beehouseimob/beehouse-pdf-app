@@ -326,7 +326,7 @@ async function generatePdfPromise(data) {
             doc.moveDown(1);
 
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
-            doc.text(textoFechamento, { align: 'justify', width: CONTENT_WIDTH });
+            doc.text(textoFechamento, MARGIN, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(2);
 
             // --- 4. Assinaturas (CONDICIONAL - Layout 2 Colunas) ---
