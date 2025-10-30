@@ -120,7 +120,7 @@ async function generatePdfPromise(data) {
                 yRow += rowHeight;
 
                 // Linha 3: Estado Civil / Regime
-                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX - 20, yRow + rowHeight).stroke();
+                doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
                 doc.font('Helvetica-Bold').fontSize(9).text('Estado Civil:', xC_1 + textPad, yRow + textYPad);
                 labelWidth = doc.widthOfString('Estado Civil:');
