@@ -305,15 +305,15 @@ async function generatePdfPromise(data) {
             const clausulaIndent = 10;
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
 
-            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, lineBreak: true });
+            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true});
             doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
             doc.moveDown(0.5);
 
             doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true, lineBreak: false });
-            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true });
+            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, lineBreak: true });
             doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
             doc.moveDown(0.5);
             
