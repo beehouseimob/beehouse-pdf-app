@@ -100,11 +100,11 @@ async function generatePdfPromise(data) {
                 // Linha 1: nome / profissão
                 doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
-                doc.font('Helvetica-Bold').fontSize(9).text('nome:', xC_1 + textPad, yRow + textYPad);
-                labelWidth = doc.widthOfString('nome:');
+                doc.font('Helvetica-Bold').fontSize(9).text('Nome:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Nome:');
                 doc.font('Helvetica').fontSize(9).text(data[`${prefix}Nome`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
-                doc.font('Helvetica-Bold').fontSize(9).text('profissão:', xC_2 + textPad, yRow + textYPad);
-                labelWidth = doc.widthOfString('profissão:');
+                doc.font('Helvetica-Bold').fontSize(9).text('Profissão:', xC_2 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('Profissão:');
                 doc.font('Helvetica').fontSize(9).text(data[`${prefix}Profissao`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
                 yRow += rowHeight;
 
