@@ -260,8 +260,8 @@ async function generatePdfPromise(data) {
             doc.moveTo(fieldBoxX, yIRow + rHI).lineTo(endX, yIRow + rHI).stroke(); // H
             doc.moveTo(xI_L5_2, yIRow).lineTo(xI_L5_2, yIRow + rHI).stroke(); // V
             doc.moveTo(xI_L5_3, yIRow).lineTo(xI_L5_3, yIRow + rHI).stroke(); // V
-            doc.font('Helvetica-Bold').fontSize(9).text('Condomínio-Valor R$:', xI_1 + textPad, yIRow + textYPad);
-            labelWidth = doc.widthOfString('Condomínio-Valor R$:');
+            doc.font('Helvetica-Bold').fontSize(9).text('Valor do Condomínio:', xI_1 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Valor do Condomínio:');
             doc.font('Helvetica').fontSize(9).text(formatCurrency(data.imovelValorCondominio) || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
             doc.font('Helvetica-Bold').fontSize(9).text('Chamada de Capital:', xI_L5_2 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Chamada de Capital:');
