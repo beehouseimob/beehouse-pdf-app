@@ -332,7 +332,7 @@ async function generatePdfPromise(data) {
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
             
             doc.font('Helvetica-Bold').text('1º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false});
-            doc.font('Helvetica').text(`   A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20});
+            doc.font('Helvetica').text(`A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20});
             doc.moveDown(0.5);
 
             doc.font('Helvetica-Bold').text('2º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false });
