@@ -82,8 +82,8 @@ async function generatePdfPromise(data) {
             const numSocios = parseInt(data.numSocios, 10) || 1;
 
             for (let i = 0; i < numSocios; i++) {
-                const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
-                const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
+                const prefix = numSocios > 1 ? `contratante ${i+1}` : 'contratante';
+                const titulo = numSocios > 1 ? `CONTRATANTE ${i+1}` : 'CONTRATANTE';
 
                  if (i > 0) y += 20;
 
@@ -431,7 +431,7 @@ async function generatePdfPromise(data) {
                     const prefix = `socio${socioIndex + 1}`;
                     
                     drawSignature(
-                        `CONTRATANTE ${socioIndex}`, 
+                        `CONTRATANTE ${socioIndex + 1}`, 
                         data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
                         `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
                         currentSigX, 
