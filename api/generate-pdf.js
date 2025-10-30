@@ -367,7 +367,8 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN, doc.y, { continued: true});
             doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN + 10, doc.y);
 
-            let sigY = doc.y + 40;
+            // Aumentado para dar espaço ao novo Título
+            let sigY = doc.y + 50; 
 
             // ==================================================
             // CORREÇÃO: Grid de 2 colunas para assinaturas
@@ -377,48 +378,99 @@ async function generatePdfPromise(data) {
             let currentSigX = MARGIN;
 
             // Função helper para desenhar uma assinatura
-            const drawSignature = (label, subLabel = '', x, yPos) => {
-                 doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
-                 // Removido .toUpperCase() para evitar quebra
-                 doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 5, { width: sigWidth, align: 'center' });
-                 if (subLabel) {
-                     doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 15, { width: sigWidth, align: 'center' });
-                 }
+            // *** FUNÇÃO MODIFICADA PARA INCLUIR 'title' ***
+            const drawSignature = (title, label, subLabel = '', x, yPos) => {
+                // 1. Título (Ex: "Contratante")
+                doc.font('Helvetica-Bold').fontSize(8).text(title || '', x, yPos - 10, { width: sigWidth, align: 'center' });
+                
+                // 2. Linha
+                doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
+                
+                // 3. Nome (Label)
+                doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 5, { width: sigWidth, align: 'center' });
+                
+                // 4. Sub-label (CPF/CNPJ)
+                if (subLabel) {
+                    doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 15, { width: sigWidth, align: 'center' });
+                }
             };
 
             // Beehouse (Sempre presente, Coluna 1, Linha 1)
-            drawSignature('Beehouse Investimentos Imobiliários', 'CNPJ 14.477.349/0001-23', currentSigX, sigY);
+            // *** CHAMADA ATUALIZADA ***
+            drawSignature(
+                'CONTRATADA', 
+                'Beehouse Investimentos Imobiliários', 
+                'CNPJ 14.477.349/0001-23', 
+                currentSigX, 
+                sigY
+            );
 
             if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
+                // *** CHAMADA ATUALIZADA ***
                 currentSigX = MARGIN + sigWidth + sigSpacing;
-                drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
+                drawSignature(
+                    'CONTRATANTE', 
+                    data.contratanteNome || 'NOME CONTRATANTE', 
+                    data.contratanteCpf || 'CPF/CNPJ', 
+                    currentSigX, 
+                    sigY
+                );
                 
                 // Cônjuge (Coluna 1, Linha 2)
+                // *** CHAMADA ATUALIZADA ***
                 sigY += 60; // Próxima linha
                 currentSigX = MARGIN;
-                drawSignature(data.conjugeNome || 'CÔNJUGE', data.conjugeCpf || 'CPF/CNPJ', currentSigX, sigY);
+                drawSignature(
+                    'CÔNJUGE', 
+                    data.conjugeNome || 'NOME CÔNJUGE', 
+                    data.conjugeCpf || 'CPF/CNPJ', 
+                    currentSigX, 
+                    sigY
+                );
 
             } else if (authType === 'socios') {
-                 // Sócio 1 (Coluna 2, Linha 1)
-                 currentSigX = MARGIN + sigWidth + sigSpacing;
-                 drawSignature(data.socio1Nome || 'SÓCIO 1', data.socio1Cpf || 'CPF/CNPJ', currentSigX, sigY);
-                 
-                 let socioIndex = 1; // Começa do Sócio 2 (índice 1)
-                 while (socioIndex < numSocios) {
-                      sigY += 60; // Próxima linha
-                      for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
-                          currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Col 1 ou Col 2
-                          const prefix = `socio${socioIndex + 1}`;
-                          drawSignature(data[`${prefix}Nome`] || `SÓCIO ${socioIndex + 1}`, data[`${prefix}Cpf`] || 'CPF/CNPJ', currentSigX, sigY);
-                          socioIndex++;
-                      }
-                 }
+                // Sócio 1 (Coluna 2, Linha 1)
+                // *** CHAMADA ATUALIZADA ***
+                currentSigX = MARGIN + sigWidth + sigSpacing;
+                drawSignature(
+                    'SÓCIO 1', 
+                    data.socio1Nome || 'NOME SÓCIO 1', 
+                    data.socio1Cpf || 'CPF/CNPJ', 
+                    currentSigX, 
+                    sigY
+                );
+                
+                let socioIndex = 1; // Começa do Sócio 2 (índice 1)
+                while (socioIndex < numSocios) {
+                    sigY += 60; // Próxima linha
+                    for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
+                        currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Col 1 ou Col 2
+                        const prefix = `socio${socioIndex + 1}`;
+                        
+                        // *** CHAMADA ATUALIZADA ***
+                        drawSignature(
+                            `SÓCIO ${socioIndex + 1}`, 
+                            data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
+                            data[`${prefix}Cpf`] || 'CPF/CNPJ', 
+                            currentSigX, 
+                            sigY
+                        );
+                        socioIndex++;
+                    }
+                }
 
             } else { // Solteiro / Viúvo
-                 // Contratante (Coluna 2, Linha 1)
-                 currentSigX = MARGIN + sigWidth + sigSpacing;
-                 drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
+                // Contratante (Coluna 2, Linha 1)
+                // *** CHAMADA ATUALIZADA ***
+                currentSigX = MARGIN + sigWidth + sigSpacing;
+                drawSignature(
+                    'CONTRATANTE', 
+                    data.contratanteNome || 'NOME CONTRATANTE', 
+                    data.contratanteCpf || 'CPF/CNPJ', 
+                    currentSigX, 
+                    sigY
+                );
             }
 
             // --- FIM DA LÓGICA DE DESENHO ---
