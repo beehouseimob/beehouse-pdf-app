@@ -361,8 +361,9 @@ async function generatePdfPromise(data) {
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
             const sigBlockHeight = 60; // Altura de CADA bloco de assinatura
             const sigYMargin = 25; // Espaço vertical entre assinaturas
-            const pageBottom = doc.page.height - doc.page.margins.bottom;
-
+            // Ajuste no pageBottom para usar a margem correta
+            const pageBottom = doc.page.height - doc.page.margins.bottom; 
+            
             const col1_X = MARGIN_LEFT;
             const col2_X = MARGIN_LEFT + sigWidth + sigSpacing;
 
@@ -376,18 +377,27 @@ async function generatePdfPromise(data) {
                 }
             };
 
-            // *** HELPER DE CHECAGEM DE PÁGINA ***
+            // *** HELPER DE CHECAGEM DE PÁGINA (CORRIGIDO) ***
             const checkAndSetY = (proposedY) => {
                 // Se o Y proposto + a altura do bloco for maior que o fim da página
                 if (proposedY + sigBlockHeight > pageBottom) {
                     doc.addPage();
-                    return doc.page.margins.top; // Retorna o topo da nova página
+                    // *** ESTA É A CORREÇÃO: ***
+                    // 1. Redesenha o cabeçalho na nova página
+                    drawHeader(doc); 
+                    // 2. Retorna a posição Y *depois* do cabeçalho + uma margem
+                    // (A sua função drawHeader já define doc.y para ~90)
+                    return doc.y + 60; 
                 }
-                return proposedY; // Retorna o Y proposto, pois cabe
+                // Retorna o Y proposto, pois cabe
+                return proposedY; 
             };
 
             // --- LÓGICA DE DESENHO REFEITA ---
+            // Posição Y inicial (60 pontos abaixo do último texto)
             let initialY = doc.y + 60; 
+
+            // Checa a Posição Y inicial para a primeira linha de assinaturas
             let currentY = checkAndSetY(initialY);
 
             // Beehouse (Sempre presente, Coluna 1, Linha 1)
@@ -435,6 +445,7 @@ async function generatePdfPromise(data) {
                 
                 while (socioIndex < numSocios) {
                     let nextY = currentY + sigBlockHeight + sigYMargin;
+                    // Checa se a *próxima* linha cabe
                     currentY = checkAndSetY(nextY);
                     
                     const prefix = `socio${socioIndex + 1}`;
