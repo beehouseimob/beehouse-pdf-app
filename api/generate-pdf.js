@@ -391,7 +391,7 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
-                    data.contratanteCpf || 'CPF/CNPJ', 
+                    `CPF/CNPJ: ${data.contratanteCpf}` || 'CPF/CNPJ', 
                     currentSigX, 
                     sigY
                 );
@@ -402,7 +402,7 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
-                    data.conjugeCpf || 'CPF/CNPJ', 
+                    `CPF/CNPJ: ${data.conjugeCpf}` || 'CPF/CNPJ', 
                     currentSigX, 
                     sigY
                 );
@@ -413,8 +413,8 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'SÓCIO 1', 
                     data.socio1Nome || 'NOME SÓCIO 1', 
-                    data.socio1Cpf || 'CPF/CNPJ', 
-                    currentSigX, 
+                    `CPF/CNPJ: ${data.socio1Cpf}` || 'CPF/CNPJ', 
+                    currentSigX,
                     sigY
                 );
                 
@@ -428,7 +428,7 @@ async function generatePdfPromise(data) {
                         drawSignature(
                             `SÓCIO ${socioIndex + 1}`, 
                             data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
-                            data[`${prefix}Cpf`] || 'CPF/CNPJ', 
+                            `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
                             currentSigX, 
                             sigY
                         );
