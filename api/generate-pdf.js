@@ -57,7 +57,7 @@ async function generatePdfPromise(data) {
 
         // Define as margens T/R/B/L (Topo, Direita, Fundo, Esquerda)
         const doc = new PDFDocument({ 
-            margins: { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN_LEFT }, 
+            margins: { top: MARGIN - 20, right: MARGIN, bottom: MARGIN, left: MARGIN_LEFT }, 
             size: 'A4' 
         });
         
