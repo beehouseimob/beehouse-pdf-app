@@ -358,7 +358,7 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN_LEFT + 10, doc.y);
 
             // *** ALTERAÇÃO 3: Espaço aumentado para 80 pontos para assinatura digital ***
-            let sigY = doc.y + 80; 
+            let sigY = doc.y + 60; 
 
             const sigWidth = 240; // Largura de cada bloco de assinatura
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
@@ -397,7 +397,7 @@ async function generatePdfPromise(data) {
                 );
                 
                 // *** ALTERAÇÃO 5: Cônjuge abaixo do Contratante, e aumento de sigY para mais espaço ***
-                sigY += sigBlockHeight + 10; // Aumentei o espaçamento entre as linhas de assinatura
+                sigY += sigBlockHeight + 20; // Aumentei o espaçamento entre as linhas de assinatura
                 currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // Mantém na mesma coluna do Contratante
                 drawSignature(
                     'CÔNJUGE', 
