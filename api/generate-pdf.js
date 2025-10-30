@@ -295,7 +295,7 @@ async function generatePdfPromise(data) {
             doc.x = MARGIN;
             doc.font('Helvetica').fontSize(9);
             
-            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários inscrita no CNPJ sob nº 14.477.349/0001-23, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
+            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº 14.477.349/0001-23, com inscrição no CRECI/SC sob o nº 7.965-J, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
             doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(1);
             
@@ -332,9 +332,9 @@ async function generatePdfPromise(data) {
             // --- 4. Assinaturas (CONDICIONAL - Layout 2 Colunas) ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
             doc.font('Helvetica-Bold').fontSize(9).text('Local e data:', MARGIN, doc.y, { continued: true});
-            doc.font('Helvetica').fontSize(9).text(` Joinville, ${dataHoje}`, MARGIN + 60, doc.y);
+            doc.font('Helvetica').fontSize(9).text(` Joinville, ${dataHoje}`, MARGIN + 10, doc.y);
 
-            let sigY = doc.y + 80;
+            let sigY = doc.y + 40;
 
             // ==================================================
             // CORREÇÃO: Grid de 2 colunas para assinaturas
@@ -362,7 +362,7 @@ async function generatePdfPromise(data) {
                 drawSignature(data.contratanteNome || 'CONTRATANTE', data.contratanteCpf || 'CPF/CNPJ', currentSigX, sigY);
                 
                 // Cônjuge (Coluna 1, Linha 2)
-                sigY += 80; // Próxima linha
+                sigY += 60; // Próxima linha
                 currentSigX = MARGIN;
                 drawSignature(data.conjugeNome || 'CÔNJUGE', data.conjugeCpf || 'CPF/CNPJ', currentSigX, sigY);
 
@@ -373,7 +373,7 @@ async function generatePdfPromise(data) {
                  
                  let socioIndex = 1; // Começa do Sócio 2 (índice 1)
                  while (socioIndex < numSocios) {
-                      sigY += 80; // Próxima linha
+                      sigY += 60; // Próxima linha
                       for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
                           currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Col 1 ou Col 2
                           const prefix = `socio${socioIndex + 1}`;
