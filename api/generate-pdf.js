@@ -348,7 +348,7 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').text('   Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(1);
 
-            const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
+            const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma a tudo presentes.';
             doc.text(textoFechamento, MARGIN_LEFT, doc.y, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(2);
 
