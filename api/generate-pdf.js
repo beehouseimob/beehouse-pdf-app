@@ -412,7 +412,7 @@ async function generatePdfPromise(data) {
                 currentSigX = MARGIN_LEFT + sigWidth + sigSpacing;
                 drawSignature(
                     'CONTRATANTE', // Sócio 1 é o Contratante principal
-                    data.socio1Nome || 'NOME SÓCIO 1', 
+                    data.socio1Nome || 'CONTRATANTE', 
                     `CPF/CNPJ: ${data.socio1Cpf}` || 'CPF/CNPJ', 
                     currentSigX,
                     sigY
@@ -428,11 +428,11 @@ async function generatePdfPromise(data) {
                     // Força o X a ser sempre na coluna da direita
                     currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; 
                     
-                    const prefix = `socio${socioIndex + 1}`;
+                    const prefix = `socio${socioIndex}`;
                     
                     drawSignature(
-                        `SÓCIO ${socioIndex + 1}`, 
-                        data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
+                        `SÓCIO ${socioIndex}`, 
+                        data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex}`, 
                         `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
                         currentSigX, 
                         sigY
