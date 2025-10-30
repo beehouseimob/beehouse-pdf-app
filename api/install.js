@@ -80,7 +80,7 @@ async function handleLocalInstall(req, res, params) {
 
         res.setHeader('Content-Type', 'text/html');
         if (params.PLACEMENT === 'DEFAULT') {
-            res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
+             res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado/Atualizado! Fechando...</body>');
         } else {
              res.send('Atualização Local Processada.');
         }
@@ -99,27 +99,27 @@ async function handleOAuthInstall(req, res, params) {
      const code = params.code;
 
      try {
-            const tokenUrl = `https://${domain}/oauth/token/`;
-            const tokenParams = { grant_type: 'authorization_code', client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code: code };
-            const response = await axios.post(tokenUrl, null, { params: tokenParams });
-            const tokenData = response.data;
-            const tokens = {
-                access_token: tokenData.access_token, refresh_token: tokenData.refresh_token,
-                expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in,
-                domain: tokenData.domain, member_id: tokenData.member_id
-            };
-            if (!tokens.access_token || !tokens.refresh_token || !tokens.domain || !tokens.member_id) throw new Error('Dados de token inválidos.');
+         const tokenUrl = `https://${domain}/oauth/token/`;
+         const tokenParams = { grant_type: 'authorization_code', client_id: CLIENT_ID, client_secret: CLIENT_SECRET, code: code };
+         const response = await axios.post(tokenUrl, null, { params: tokenParams });
+         const tokenData = response.data;
+         const tokens = {
+             access_token: tokenData.access_token, refresh_token: tokenData.refresh_token,
+             expires_in: Math.floor(Date.now() / 1000) + tokenData.expires_in,
+             domain: tokenData.domain, member_id: tokenData.member_id
+         };
+         if (!tokens.access_token || !tokens.refresh_token || !tokens.domain || !tokens.member_id) throw new Error('Dados de token inválidos.');
 
-            await saveTokens(tokens);
-            const handlerUrl = `https://${req.headers.host}/api/install`;
-            await registerPlacement(handlerUrl, tokens);
+         await saveTokens(tokens);
+         const handlerUrl = `https://${req.headers.host}/api/install`;
+         await registerPlacement(handlerUrl, tokens);
 
-            res.setHeader('Content-Type', 'text/html');
-            res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado! Fechando...</body>');
-        } catch (error) {
-            console.error('[Install OAuth] ERRO:', error.response?.data || error.message || error);
-            res.status(500).send(`Erro (OAuth): ${error.message}`);
-        }
+         res.setHeader('Content-Type', 'text/html');
+         res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado! Fechando...</body>');
+     } catch (error) {
+         console.error('[Install OAuth] ERRO:', error.response?.data || error.message || error);
+         res.status(500).send(`Erro (OAuth): ${error.message}`);
+     }
 }
 
 // ==================================================================
@@ -139,7 +139,7 @@ async function handlePlacementClick(req, res) {
         let companyId;
         if (req.body.PLACEMENT_OPTIONS) {
             try {
-                companyId = JSON.parse(req.body.PLACEMENT_OPTIONS).ID;
+                 companyId = JSON.parse(req.body.PLACEMENT_OPTIONS).ID;
             } catch (e) { return res.status(400).send('Erro placement options.'); }
         }
         if (!companyId) return res.status(400).send('ID da Empresa não encontrado.');
@@ -171,15 +171,15 @@ async function handlePostSelection(req, res) {
         let contratanteData = { nome: '', cpf: '', telefone: '', email: '' };
         if (companyId && authType !== 'socios_qtd') {
             try {
-                const company = await call('crm.company.get', { id: companyId }, authTokens);
-                if (company) {
-                    contratanteData = {
-                        nome: company.TITLE || '',
-                        telefone: (company.PHONE?.[0]?.VALUE) || '',
-                        email: (company.EMAIL?.[0]?.VALUE) || '',
-                        cpf: company.UF_CRM_66C37392C9F3D || ''
-                    };
-                }
+                 const company = await call('crm.company.get', { id: companyId }, authTokens);
+                 if (company) {
+                     contratanteData = {
+                         nome: company.TITLE || '',
+                         telefone: (company.PHONE?.[0]?.VALUE) || '',
+                         email: (company.EMAIL?.[0]?.VALUE) || '',
+                         cpf: company.UF_CRM_66C37392C9F3D || ''
+                     };
+                 }
             } catch(e){ console.error("[Handler PostSelection] Erro buscar empresa:", e.message); }
         }
 
@@ -211,7 +211,7 @@ function getSelectionHtml(companyId, memberId) {
     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Selecionar Tipo</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}a{display:block;background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;text-decoration:none;margin-bottom:15px;font-weight:700;transition:background-color .2s}a:hover{background-color:#0056b3}a.secondary{background-color:#6c757d}a.secondary:hover{background-color:#5a6268}</style></head><body><div class="container"><h2>Selecione o Tipo de Autorização de Venda</h2><a href="${buildUrl('solteiro')}">Solteiro / Viúvo</a><a href="${buildUrl('casado')}">Casado / União Estável</a><a href="${buildUrl('socios_qtd')}" class="secondary">Imóvel de Sócios</a></div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,400),BX.setTitle("Selecionar Tipo")})</script></body></html>`;
 }
 
-// HTML para perguntar a quantidade de sócios
+// HTML para perguntar a quantidade de sócios (COM BOTÃO VOLTAR)
 function getSociosQtdHtml(companyId, memberId) {
      // 1. Ação aponta para a raiz
      const formAction = `/api/install`;
@@ -220,23 +220,28 @@ function getSociosQtdHtml(companyId, memberId) {
      const companyIdInput = companyId ? `<input type="hidden" name="companyId" value="${companyId}">` : '';
      const memberIdInput = memberId ? `<input type="hidden" name="member_id" value="${memberId}">` : '';
 
-     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Qtd Sócios</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}label{display:block;margin-bottom:10px;font-weight:600;color:#555}input[type=number]{width:80px;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:16px;margin-bottom:20px;text-align:center}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}</style></head><body><div class="container"><h2>Imóvel de Sócios</h2>
-         
-         <form action="${formAction}" method="GET">
-             <input type="hidden" name="type" value="socios_form">
-             ${companyIdInput}
-             ${memberIdInput}
-             
-             <label for="qtd">Quantos sócios são proprietários?</label>
-             <input type="number" id="qtd" name="qtd" min="2" value="2" required>
-             <button type="submit">Continuar</button>
-         </form>
+     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Qtd Sócios</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}label{display:block;margin-bottom:10px;font-weight:600;color:#555}input[type=number]{width:80px;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:16px;margin-bottom:20px;text-align:center}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}
+     /* --- ADICIONADO CSS --- */
+     .back-link{display:inline-block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
+     </style></head><body><div class="container"><h2>Imóvel de Sócios</h2>
+       
+       <form action="${formAction}" method="GET">
+           <input type="hidden" name="type" value="socios_form">
+           ${companyIdInput}
+           ${memberIdInput}
+           
+           <label for="qtd">Quantos sócios são proprietários?</label>
+           <input type="number" id="qtd" name="qtd" min="2" value="2" required>
+           <button type="submit">Continuar</button>
+       </form>
+
+       <a href="javascript:history.back()" class="back-link">Voltar</a>
 
      </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,400),BX.setTitle("Qtd Sócios")})</script></body></html>`;
 }
 
 
-// HTML principal do formulário (com <select> e lógica condicional)
+// HTML principal do formulário (COM BOTÃO VOLTAR)
 function getFormHtml(type, contratanteData, numSocios = 1) {
     let contratanteHtml = '';
 
@@ -277,16 +282,26 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         <div class="form-section">
             <h3>CÔNJUGE</h3>
              <div class="form-grid">
-                <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
-                <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
-                <div><label>RG nº:</label><input type="text" name="conjugeRg" placeholder="Ex: 9.999.999"></div>
-                <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
+                 <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
+                 <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
+                 <div><label>RG nº:</label><input type="text" name="conjugeRg" placeholder="Ex: 9.999.999"></div>
+                 <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
                  <div class="grid-col-span-2"></div>
              </div>
         </div>` : '';
 
-    return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}@media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="${type}">${numSocios>1?`<input type="hidden" name="numSocios" value="${numSocios}">`:""}${contratanteHtml}${conjugeHtml}<div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div><div class="button-container"><button type="submit">Gerar PDF</button></div></form><script src="//api.bitrix24.com/api/v1/"></script><script>function toggleRegime(e){let t=document.getElementById(e+"EstadoCivil"),o=document.getElementById(e+"RegimeDiv");if(t&&o){let n=t.value;"Casado(a)"===n||"União Estável"===n?o.style.display="block":o.style.display="none";let l=o.querySelector("select");l&&(l.value="")}}document.addEventListener("DOMContentLoaded",function(){let e=${numSocios};for(let t=0;t<e;t++){let o=e>1?\`socio\${t+1}\`:"contratante";toggleRegime(o)}window.BX&&BX.ready(function(){BX.resizeWindow(window.innerWidth>850?850:window.innerWidth,700),BX.setTitle("Gerar Autorização")})});</script></body></html>`;
+    return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
+    /* --- ADICIONADO CSS --- */
+    .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
+    @media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="${type}">${numSocios>1?`<input type="hidden" name="numSocios" value="${numSocios}">`:""}${contratanteHtml}${conjugeHtml}<div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
+    
+    <div class="button-container">
+        <button type="submit">Gerar PDF</button>
+        <a href="javascript:history.back()" class="back-link">Voltar</a>
+    </div>
+
+    </form><script src="//api.bitrix24.com/api/v1/"></script><script>function toggleRegime(e){let t=document.getElementById(e+"EstadoCivil"),o=document.getElementById(e+"RegimeDiv");if(t&&o){let n=t.value;"Casado(a)"===n||"União Estável"===n?o.style.display="block":o.style.display="none";let l=o.querySelector("select");l&&(l.value="")}}document.addEventListener("DOMContentLoaded",function(){let e=${numSocios};for(let t=0;t<e;t++){let o=e>1?\`socio\${t+1}\`:"contratante";toggleRegime(o)}window.BX&&BX.ready(function(){BX.resizeWindow(window.innerWidth>850?850:window.innerWidth,700),BX.setTitle("Gerar Autorização")})});</script></body></html>`;
 }
 
 // ==================================================================
