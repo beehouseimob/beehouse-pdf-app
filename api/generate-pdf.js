@@ -300,7 +300,7 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(8);
             
             // Texto do Preâmbulo com Negrito
-            doc.text('O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº ', {
+            doc.text('O(s) Contratante(s) autoriza(m) a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº ', {
                 continued: true,
                 align: 'justify', 
                 width: CONTENT_WIDTH
@@ -333,7 +333,7 @@ async function generatePdfPromise(data) {
             doc.moveDown(0.5);
 
             doc.font('Helvetica-Bold').text('2º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false });
-            doc.font('Helvetica').text(`   O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
+            doc.font('Helvetica').text(`   O(s) Contratante(s) pagará(ão) a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
             doc.font('Helvetica-Bold').text('3º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false });
@@ -341,7 +341,7 @@ async function generatePdfPromise(data) {
             doc.moveDown(0.5);
             
             doc.font('Helvetica-Bold').text('4º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false });
-            doc.font('Helvetica').text('   O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
+            doc.font('Helvetica').text('   O(s) Contratante(s) declara(m) que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
             doc.font('Helvetica-Bold').text('5º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false });
