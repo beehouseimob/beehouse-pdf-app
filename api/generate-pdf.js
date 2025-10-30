@@ -263,9 +263,9 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(9).text('Condomínio-Valor R$:', xI_1 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Condomínio-Valor R$:');
             doc.font('Helvetica').fontSize(9).text(formatCurrency(data.imovelValorCondominio) || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
-            doc.font('Helvetica-Bold').fontSize(9).text('Chamada de Capital R$:', xI_L5_2 + textPad, yIRow + textYPad);
-            labelWidth = doc.widthOfString('Chamada de Capital R$:');
-            doc.font('Helvetica').fontSize(9).text(data.imovelChamadaCapital || '', xI_L5_2 + textPad + labelWidth + textPad, yIRow + textYPad);
+            doc.font('Helvetica-Bold').fontSize(9).text('Chamada de Capital:', xI_L5_2 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Chamada de Capital:');
+            doc.font('Helvetica').fontSize(9).text(formatCurrency(data.imovelChamadaCapital) || '', xI_L5_2 + textPad + labelWidth + textPad, yIRow + textYPad);
             doc.font('Helvetica-Bold').fontSize(9).text('Nº de parcelas:', xI_L5_3 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Nº de parcelas:');
             doc.font('Helvetica').fontSize(9).text(data.imovelNumParcelas || '', xI_L5_3 + textPad + labelWidth + textPad, yIRow + textYPad);
