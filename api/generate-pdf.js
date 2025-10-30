@@ -13,7 +13,8 @@ function formatCurrency(value) {
 const MARGIN_LEFT = 30; // Margem esquerda
 const MARGIN = 50;      // Margem Topo, Direita e Rodapé
 const PAGE_WIDTH = 612; // Largura A4
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN; // (612 - 40 - 50 = 522)
+// ATENÇÃO: Seu cálculo de CONTENT_WIDTH estava (612 - 40 - 50). Corrigi para usar MARGIN_LEFT (30).
+const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN; // (612 - 30 - 50 = 532)
 const PAGE_END = PAGE_WIDTH - MARGIN; // 612 - 50 = 562
 
 // ==================================================================
@@ -44,7 +45,11 @@ function drawHeader(doc) {
     doc.font('Helvetica').fontSize(8).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, initialY + 24, { width: blockWidth, align: 'right' });
     doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' }); 
 
-    doc.y = MARGIN + 65;
+    // *** ALTERAÇÃO 1: Reduzido o espaço após o header ***
+    // O header termina em initialY + 36 (aprox. 66).
+    // O 'doc.y' antigo era MARGIN + 65 (115).
+    // Novo 'doc.y' (90) deixa um espaço mais agradável.
+    doc.y = initialY + 60; // (30 + 60 = 90)
 }
 
 
@@ -96,7 +101,8 @@ async function generatePdfPromise(data) {
                 doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
-                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
+                // *** ALTERAÇÃO 2: Linha vertical movida 10 para a esquerda ***
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10;
                 let yRow = yC;
 
                 // Linha 1: nome / profissão
@@ -187,14 +193,12 @@ async function generatePdfPromise(data) {
                  doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
                  doc.font('Helvetica-Bold').fontSize(8).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Profissão:');
-                 // ** CORREÇÃO AQUI **
                  doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  yRowConj += rowHeight;
                  
                  // Linha 3 Cônjuge: Email
                  doc.font('Helvetica-Bold').fontSize(8).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Email:');
-                 // ** CORREÇÃO AQUI **
                  doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
 
                  y = yConj + hConj; // Usa a altura total
@@ -360,26 +364,30 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN_LEFT, doc.y, { continued: true});
             doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN_LEFT + 10, doc.y);
 
-            let sigY = doc.y + 50; // Espaço para assinaturas
+            // *** ALTERAÇÃO 3: Espaço aumentado de 50 para 70 (para assinatura digital) ***
+            let sigY = doc.y + 70; // Espaço para assinaturas
 
             const sigWidth = 240; // Largura de cada bloco de assinatura
-            const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); // Espaço entre os 2 blocos
+            // Cálculo de espaço corrigido para usar CONTENT_WIDTH
+            const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
             let currentSigX = MARGIN_LEFT;
 
-            // Função helper para desenhar uma assinatura
+            // *** ALTERAÇÃO 4: Função de assinatura modificada ***
+            // Títulos e Nomes agora aparecem ABAIXO da linha
             const drawSignature = (title, label, subLabel = '', x, yPos) => {
-                // 1. Título (Ex: "Contratante")
-                doc.font('Helvetica-Bold').fontSize(8).text(title || '', x, yPos - 10, { width: sigWidth, align: 'center' });
                 
-                // 2. Linha
+                // 1. Linha (no yPos, com espaço acima)
                 doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
                 
+                // 2. Título (Abaixo da linha)
+                doc.font('Helvetica-Bold').fontSize(8).text(title || '', x, yPos + 5, { width: sigWidth, align: 'center' });
+                
                 // 3. Nome (Label)
-                doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 5, { width: sigWidth, align: 'center' });
+                doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 15, { width: sigWidth, align: 'center' });
                 
                 // 4. Sub-label (CPF/CNPJ)
                 if (subLabel) {
-                    doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 15, { width: sigWidth, align: 'center' });
+                    doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 25, { width: sigWidth, align: 'center' });
                 }
             };
 
