@@ -357,16 +357,16 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN_LEFT, doc.y, { continued: true});
             doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN_LEFT + 10, doc.y);
 
-            // *** ALTERAÇÃO 3: Espaço aumentado para 80 pontos para assinatura digital ***
-            let sigY = doc.y + 60; 
-
             const sigWidth = 240; // Largura de cada bloco de assinatura
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
-            // Nova altura para o bloco de assinatura (linha + título + nome + cpf)
-            const sigBlockHeight = 60; // Aumentei de 50 para 60 para mais espaço vertical.
-            let currentSigX = MARGIN_LEFT;
+            const sigBlockHeight = 60; // Altura de CADA bloco de assinatura
+            const sigYMargin = 25; // Espaço vertical entre assinaturas
+            const pageBottom = doc.page.height - doc.page.margins.bottom;
 
-            // Função helper para desenhar uma assinatura (títulos abaixo da linha)
+            const col1_X = MARGIN_LEFT;
+            const col2_X = MARGIN_LEFT + sigWidth + sigSpacing;
+
+            // Função helper para desenhar
             const drawSignature = (title, label, subLabel = '', x, yPos) => {
                 doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
                 doc.font('Helvetica-Bold').fontSize(8).text(title || '', x, yPos + 5, { width: sigWidth, align: 'center' });
@@ -376,57 +376,66 @@ async function generatePdfPromise(data) {
                 }
             };
 
+            // *** HELPER DE CHECAGEM DE PÁGINA ***
+            const checkAndSetY = (proposedY) => {
+                // Se o Y proposto + a altura do bloco for maior que o fim da página
+                if (proposedY + sigBlockHeight > pageBottom) {
+                    doc.addPage();
+                    return doc.page.margins.top; // Retorna o topo da nova página
+                }
+                return proposedY; // Retorna o Y proposto, pois cabe
+            };
+
+            // --- LÓGICA DE DESENHO REFEITA ---
+            let initialY = doc.y + 60; 
+            let currentY = checkAndSetY(initialY);
+
             // Beehouse (Sempre presente, Coluna 1, Linha 1)
             drawSignature(
                 'CONTRATADA', 
                 'Beehouse Investimentos Imobiliários', 
                 'CNPJ 14.477.349/0001-23', 
-                currentSigX, 
-                sigY
+                col1_X, 
+                currentY
             );
 
             if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing;
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
                     `CPF/CNPJ: ${data.contratanteCpf}` || 'CPF/CNPJ', 
-                    currentSigX, 
-                    sigY
+                    col2_X, 
+                    currentY
                 );
                 
-                // *** ALTERAÇÃO 5: Cônjuge abaixo do Contratante, e aumento de sigY para mais espaço ***
-                sigY += sigBlockHeight + 25; // Aumentei o espaçamento entre as linhas de assinatura
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // Mantém na mesma coluna do Contratante
+                let nextY = currentY + sigBlockHeight + sigYMargin;
+                currentY = checkAndSetY(nextY);
+
+                // Cônjuge (Coluna 2, Linha 2)
                 drawSignature(
                     'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
                     `CPF/CNPJ: ${data.conjugeCpf}` || 'CPF/CNPJ', 
-                    currentSigX, 
-                    sigY
+                    col2_X, 
+                    currentY
                 );
 
             } else if (authType === 'socios') {
-                // Sócio 1 (Coluna 2, Linha 1) - Renomeado para CONTRATANTE
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing;
+                // Sócio 1 (Coluna 2, Linha 1)
                 drawSignature(
-                    'CONTRATANTE', // Sócio 1 é o Contratante principal
+                    'CONTRATANTE',
                     data.socio1Nome || 'CONTRATANTE', 
                     `CPF/CNPJ: ${data.socio1Cpf}` || 'CPF/CNPJ', 
-                    currentSigX,
-                    sigY
+                    col2_X,
+                    currentY
                 );
                 
-                let socioIndex = 1; // Começa do Sócio 2 (índice 1)
+                let socioIndex = 1; 
                 
-                // Loop para os sócios restantes, TODOS na coluna da direita
                 while (socioIndex < numSocios) {
-                    // Aumenta o Y para a próxima linha de assinatura
-                    sigY += sigBlockHeight + 25; 
-                    
-                    // Força o X a ser sempre na coluna da direita
-                    currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; 
+                    let nextY = currentY + sigBlockHeight + sigYMargin;
+                    currentY = checkAndSetY(nextY);
                     
                     const prefix = `socio${socioIndex + 1}`;
                     
@@ -434,21 +443,20 @@ async function generatePdfPromise(data) {
                         `CONTRATANTE ${socioIndex + 1}`, 
                         data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
                         `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
-                        currentSigX, 
-                        sigY
+                        col2_X, 
+                        currentY
                     );
                     socioIndex++;
                 }
 
             } else { // Solteiro / Viúvo
                 // Contratante (Coluna 2, Linha 1)
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing;
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
                     `CPF/CNPJ: ${data.contratanteCpf}` || 'CPF/CNPJ', 
-                    currentSigX, 
-                    sigY
+                    col2_X, 
+                    currentY
                 );
             }
 
