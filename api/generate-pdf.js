@@ -1,4 +1,4 @@
-import PDFDocument, { lineWidth } from 'pdfkit';
+import PDFDocument from 'pdfkit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
