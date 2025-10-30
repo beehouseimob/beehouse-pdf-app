@@ -126,12 +126,12 @@ async function generatePdfPromise(data) {
                 labelWidth = doc.widthOfString('Estado Civil:');
                 doc.font('Helvetica').fontSize(9).text(data[`${prefix}EstadoCivil`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
                 if (data[`${prefix}RegimeCasamento`]) {
-                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad - 20, yRow + textYPad);
+                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
                     labelWidth = doc.widthOfString('Regime de Casamento:');
-                    doc.font('Helvetica').fontSize(9).text(data[`${prefix}RegimeCasamento`], xC_2 + textPad + labelWidth + textPad - 20, yRow + textYPad);
+                    doc.font('Helvetica').fontSize(9).text(data[`${prefix}RegimeCasamento`], xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
                 }
                 else {
-                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad - 20, yRow + textYPad);
+                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad, yRow + textYPad);
                     labelWidth = doc.widthOfString('Regime de Casamento:');
                 }
                 yRow += rowHeight;
