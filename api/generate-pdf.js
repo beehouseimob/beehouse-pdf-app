@@ -130,6 +130,10 @@ async function generatePdfPromise(data) {
                     labelWidth = doc.widthOfString('Regime de Casamento:');
                     doc.font('Helvetica').fontSize(9).text(data[`${prefix}RegimeCasamento`], xC_2 + textPad + labelWidth + textPad - 20, yRow + textYPad);
                 }
+                else {
+                    doc.font('Helvetica-Bold').fontSize(9).text('Regime de Casamento:', xC_2 + textPad - 20, yRow + textYPad);
+                    labelWidth = doc.widthOfString('Regime de Casamento:');
+                }
                 yRow += rowHeight;
 
                 // Linha 4: Endereço Residencial
