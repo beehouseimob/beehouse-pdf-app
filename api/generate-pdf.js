@@ -56,7 +56,7 @@ async function generatePdfPromise(data) {
     return new Promise((resolve, reject) => {
 
         const doc = new PDFDocument({ 
-            margins: { top: MARGIN - 20, right: MARGIN, bottom: MARGIN - 30, left: MARGIN_LEFT }, 
+            margins: { top: MARGIN - 20, right: MARGIN, bottom: MARGIN - 35, left: MARGIN_LEFT }, 
             size: 'A4' 
         });
         
