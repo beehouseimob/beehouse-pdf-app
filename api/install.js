@@ -213,8 +213,26 @@ function getSelectionHtml(companyId, memberId) {
 
 // HTML para perguntar a quantidade de sócios
 function getSociosQtdHtml(companyId, memberId) {
-     const formAction = `/api/install?type=socios_form${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
-     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Qtd Sócios</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}label{display:block;margin-bottom:10px;font-weight:600;color:#555}input[type=number]{width:80px;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:16px;margin-bottom:20px;text-align:center}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}</style></head><body><div class="container"><h2>Imóvel de Sócios</h2><form action="${formAction}" method="GET"><label for="qtd">Quantos sócios são proprietários?</label><input type="number" id="qtd" name="qtd" min="2" value="2" required><button type="submit">Continuar</button></form></div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,400),BX.setTitle("Qtd Sócios")})</script></body></html>`;
+     // 1. Ação aponta para a raiz
+     const formAction = `/api/install`;
+     
+     // 2. Criamos os inputs escondidos
+     const companyIdInput = companyId ? `<input type="hidden" name="companyId" value="${companyId}">` : '';
+     const memberIdInput = memberId ? `<input type="hidden" name="member_id" value="${memberId}">` : '';
+
+     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Qtd Sócios</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}label{display:block;margin-bottom:10px;font-weight:600;color:#555}input[type=number]{width:80px;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:16px;margin-bottom:20px;text-align:center}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}</style></head><body><div class="container"><h2>Imóvel de Sócios</h2>
+         
+         <form action="${formAction}" method="GET">
+             <input type="hidden" name="type" value="socios_form">
+             ${companyIdInput}
+             ${memberIdInput}
+             
+             <label for="qtd">Quantos sócios são proprietários?</label>
+             <input type="number" id="qtd" name="qtd" min="2" value="2" required>
+             <button type="submit">Continuar</button>
+         </form>
+
+     </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,400),BX.setTitle("Qtd Sócios")})</script></body></html>`;
 }
 
 
