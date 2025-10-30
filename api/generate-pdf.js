@@ -10,11 +10,10 @@ function formatCurrency(value) {
 }
 
 // --- CONSTANTES DE LAYOUT ---
-const MARGIN_LEFT = 40; // ALTERADO: Nova margem esquerda
-const MARGIN = 50;      // ALTERADO: Será usada para Topo, Direita e Rodapé
+const MARGIN = 50;
 const PAGE_WIDTH = 612;
-const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN; // ALTERADO: (612 - 40 - 50 = 522)
-const PAGE_END = PAGE_WIDTH - MARGIN; // 562 (correto, baseado na margem direita)
+const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
+const PAGE_END = PAGE_WIDTH - MARGIN; // 562
 
 // ==================================================================
 // FUNÇÃO DE HEADER (Como no seu código)
@@ -27,15 +26,14 @@ function drawHeader(doc) {
         console.log('Tentando carregar logo de:', logoPath);
 
         // 1. Bloco da Esquerda (Logo)
-        doc.image(logoPath, MARGIN_LEFT, MARGIN - 5, { width: 180 }); // ALTERADO: MARGIN -> MARGIN_LEFT
+        doc.image(logoPath, MARGIN, MARGIN - 5, { width: 180 }); // Seu width de 180
 
     } catch (imageError) {
          console.error("Erro ao carregar o logo:", imageError.message);
-         doc.font('Helvetica-Bold').fontSize(10).text('Beehouse', MARGIN_LEFT, MARGIN + 10); // ALTERADO: MARGIN -> MARGIN_LEFT
+         doc.font('Helvetica-Bold').fontSize(10).text('Beehouse', MARGIN, MARGIN + 10);
     }
 
     // 2. Bloco da Direita (Título, Nome da Empresa, Endereço)
-    // (Esta lógica não muda, pois é alinhada à direita e usa a MARGIN da direita)
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
     const blockWidth = 250; 
     const initialY = MARGIN - 5; 
@@ -56,11 +54,7 @@ async function generatePdfPromise(data) {
 
     return new Promise((resolve, reject) => {
 
-        // ALTERADO: Usando 'margins' para definir T/R/B/L separadamente
-        const doc = new PDFDocument({ 
-            margins: { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN_LEFT }, 
-            size: 'A4' 
-        });
+        const doc = new PDFDocument({ margin: MARGIN, size: 'A4' });
         const buffers = [];
 
         doc.on('data', buffers.push.bind(buffers));
@@ -74,8 +68,8 @@ async function generatePdfPromise(data) {
             const textPad = 5;
             const textYPad = 7;
             const labelBoxWidth = 22;
-            const fieldBoxX = MARGIN_LEFT + labelBoxWidth; // ALTERADO: MARGIN -> MARGIN_LEFT
-            const endX = MARGIN_LEFT + CONTENT_WIDTH;     // ALTERADO: MARGIN -> MARGIN_LEFT
+            const fieldBoxX = MARGIN + labelBoxWidth;
+            const endX = MARGIN + CONTENT_WIDTH;
             let labelWidth = 0;
             const rowHeight = 20;
 
@@ -92,9 +86,9 @@ async function generatePdfPromise(data) {
                 const yC = y;
                 const hC = rowHeight * 5;
 
-                doc.rect(MARGIN_LEFT, yC, CONTENT_WIDTH, hC).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-                doc.rect(MARGIN_LEFT, yC, labelBoxWidth, hC).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore(); // ALTERADO: MARGIN -> MARGIN_LEFT
+                doc.rect(MARGIN, yC, CONTENT_WIDTH, hC).stroke();
+                doc.rect(MARGIN, yC, labelBoxWidth, hC).stroke();
+                doc.save().translate(MARGIN + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
                 const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2;
@@ -160,9 +154,9 @@ async function generatePdfPromise(data) {
                  const yConj = y;
                  const hConj = rowHeight * 3; // Altura para 3 linhas
 
-                 doc.rect(MARGIN_LEFT, yConj, CONTENT_WIDTH, hConj).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-                 doc.rect(MARGIN_LEFT, yConj, labelBoxWidth, hConj).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-                 doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore(); // ALTERADO: MARGIN -> MARGIN_LEFT
+                 doc.rect(MARGIN, yConj, CONTENT_WIDTH, hConj).stroke();
+                 doc.rect(MARGIN, yConj, labelBoxWidth, hConj).stroke();
+                 doc.save().translate(MARGIN + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore();
 
                  const xConj_1 = fieldBoxX;
                  const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 3;
@@ -188,13 +182,13 @@ async function generatePdfPromise(data) {
                  doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
                  doc.font('Helvetica-Bold').fontSize(8).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Profissão:');
-                 doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xC_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  yRowConj += rowHeight;
                  
                  // Linha 3 Cônjuge: Email
                  doc.font('Helvetica-Bold').fontSize(8).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Email:');
-                 doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xC_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                 doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
 
                  y = yConj + hConj; // Usa a altura total
              }
@@ -209,9 +203,9 @@ async function generatePdfPromise(data) {
             const rHI = 20;
             const hI = rHI * 6;
 
-            doc.rect(MARGIN_LEFT, yI, CONTENT_WIDTH, hI).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.rect(MARGIN_LEFT, yI, labelBoxWidth, hI).stroke(); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI / 2, -4, { width: hI, align: 'center' }).restore(); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.rect(MARGIN, yI, CONTENT_WIDTH, hI).stroke();
+            doc.rect(MARGIN, yI, labelBoxWidth, hI).stroke();
+            doc.save().translate(MARGIN + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI / 2, -4, { width: hI, align: 'center' }).restore();
 
             const xI_1 = fieldBoxX;
             const xI_2 = fieldBoxX + 318;
@@ -298,10 +292,11 @@ async function generatePdfPromise(data) {
 
             // --- 3. Seção CLÁUSULAS ---
             doc.y = y;
-            doc.x = MARGIN_LEFT; // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.x = MARGIN;
             doc.font('Helvetica').fontSize(8);
             
             // --- Início da alteração para negrito ---
+            // Removida a const textoPreambulo. O texto é renderizado em partes.
             
             // Parte 1: Normal
             doc.text('O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº ', {
@@ -343,34 +338,34 @@ async function generatePdfPromise(data) {
             const clausulaIndent = 10;
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
             
-            doc.font('Helvetica-Bold').text('1º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false}); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').text(`   A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20}); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, lineBreak: false});
+            doc.font('Helvetica').text(`   A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20});
             doc.moveDown(0.5);
 
-            doc.font('Helvetica-Bold').text('2º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false }); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').text(`   O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 }); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text(`   O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('3º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false }); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').text('   A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 }); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text('   A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('4º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false }); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').text('   O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 }); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text('   O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('5º', MARGIN_LEFT, doc.y, { continued: true, lineBreak: false }); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').text('   Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', MARGIN_LEFT + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 }); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text('   Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(1);
 
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
-            doc.text(textoFechamento, MARGIN_LEFT, doc.y, { align: 'justify', width: CONTENT_WIDTH }); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.text(textoFechamento, MARGIN, doc.y, { align: 'justify', width: CONTENT_WIDTH });
             doc.moveDown(2);
 
             // --- 4. Assinaturas (CONDICIONAL - Layout 2 Colunas) ---
             const dataHoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-            doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN_LEFT, doc.y, { continued: true}); // ALTERADO: MARGIN -> MARGIN_LEFT
-            doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN_LEFT + 10, doc.y); // ALTERADO: MARGIN -> MARGIN_LEFT
+            doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN, doc.y, { continued: true});
+            doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN + 10, doc.y);
 
             // Aumentado para dar espaço ao novo Título
             let sigY = doc.y + 50; 
@@ -380,7 +375,7 @@ async function generatePdfPromise(data) {
             // ==================================================
             const sigWidth = 240; // Largura maior para 2 colunas
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); // Espaço entre
-            let currentSigX = MARGIN_LEFT; // ALTERADO: MARGIN -> MARGIN_LEFT
+            let currentSigX = MARGIN;
 
             // Função helper para desenhar uma assinatura
             // *** FUNÇÃO MODIFICADA PARA INCLUIR 'title' ***
@@ -413,7 +408,7 @@ async function generatePdfPromise(data) {
             if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
                 // *** CHAMADA ATUALIZADA ***
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // ALTERADO: MARGIN -> MARGIN_LEFT
+                currentSigX = MARGIN + sigWidth + sigSpacing;
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
@@ -425,7 +420,7 @@ async function generatePdfPromise(data) {
                 // Cônjuge (Coluna 1, Linha 2)
                 // *** CHAMADA ATUALIZADA ***
                 sigY += 60; // Próxima linha
-                currentSigX = MARGIN_LEFT; // ALTERADO: MARGIN -> MARGIN_LEFT
+                currentSigX = MARGIN;
                 drawSignature(
                     'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
@@ -437,7 +432,7 @@ async function generatePdfPromise(data) {
             } else if (authType === 'socios') {
                 // Sócio 1 (Coluna 2, Linha 1)
                 // *** CHAMADA ATUALIZADA ***
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // ALTERADO: MARGIN -> MARGIN_LEFT
+                currentSigX = MARGIN + sigWidth + sigSpacing;
                 drawSignature(
                     'SÓCIO 1', 
                     data.socio1Nome || 'NOME SÓCIO 1', 
@@ -450,7 +445,7 @@ async function generatePdfPromise(data) {
                 while (socioIndex < numSocios) {
                     sigY += 60; // Próxima linha
                     for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
-                        currentSigX = MARGIN_LEFT + col * (sigWidth + sigSpacing); // ALTERADO: MARGIN -> MARGIN_LEFT
+                        currentSigX = MARGIN + col * (sigWidth + sigSpacing); // Col 1 ou Col 2
                         const prefix = `socio${socioIndex + 1}`;
                         
                         // *** CHAMADA ATUALIZADA ***
@@ -468,7 +463,7 @@ async function generatePdfPromise(data) {
             } else { // Solteiro / Viúvo
                 // Contratante (Coluna 2, Linha 1)
                 // *** CHAMADA ATUALIZADA ***
-                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // ALTERADO: MARGIN -> MARGIN_LEFT
+                currentSigX = MARGIN + sigWidth + sigSpacing;
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
