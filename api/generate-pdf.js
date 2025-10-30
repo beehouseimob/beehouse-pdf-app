@@ -10,7 +10,7 @@ function formatCurrency(value) {
 }
 
 // --- CONSTANTES DE LAYOUT ---
-const MARGIN = 30;
+const MARGIN = 50;
 const PAGE_WIDTH = 612;
 const CONTENT_WIDTH = PAGE_WIDTH - (MARGIN * 2); // 512
 const PAGE_END = PAGE_WIDTH - MARGIN; // 562
