@@ -442,7 +442,7 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'CONTRATANTE', 
                     data.contratanteNome || 'NOME CONTRATANTE', 
-                    data.contratanteCpf || 'CPF/CNPJ', 
+                    `CPF/CNPJ: ${data.contratanteCpf}` || 'CPF/CNPJ', 
                     currentSigX, 
                     sigY
                 );
