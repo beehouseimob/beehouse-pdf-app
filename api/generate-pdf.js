@@ -13,7 +13,6 @@ function formatCurrency(value) {
 const MARGIN_LEFT = 30; // Margem esquerda
 const MARGIN = 50;      // Margem Topo, Direita e Rodapé
 const PAGE_WIDTH = 612; // Largura A4
-// ATENÇÃO: Seu cálculo de CONTENT_WIDTH estava (612 - 40 - 50). Corrigi para usar MARGIN_LEFT (30).
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN; // (612 - 30 - 50 = 532)
 const PAGE_END = PAGE_WIDTH - MARGIN; // 612 - 50 = 562
 
@@ -45,11 +44,7 @@ function drawHeader(doc) {
     doc.font('Helvetica').fontSize(8).text('R. Jacob Eisenhut, 223 - SL 801 - Atiradores - Joinville/SC', rightAlignX, initialY + 24, { width: blockWidth, align: 'right' });
     doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' }); 
 
-    // *** ALTERAÇÃO 1: Reduzido o espaço após o header ***
-    // O header termina em initialY + 36 (aprox. 66).
-    // O 'doc.y' antigo era MARGIN + 65 (115).
-    // Novo 'doc.y' (90) deixa um espaço mais agradável.
-    doc.y = initialY + 60; // (30 + 60 = 90)
+    doc.y = initialY + 60; 
 }
 
 
@@ -60,7 +55,6 @@ async function generatePdfPromise(data) {
 
     return new Promise((resolve, reject) => {
 
-        // Define as margens T/R/B/L (Topo, Direita, Fundo, Esquerda)
         const doc = new PDFDocument({ 
             margins: { top: MARGIN - 20, right: MARGIN, bottom: MARGIN, left: MARGIN_LEFT }, 
             size: 'A4' 
@@ -101,8 +95,7 @@ async function generatePdfPromise(data) {
                 doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
-                // *** ALTERAÇÃO 2: Linha vertical movida 10 para a esquerda ***
-                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10;
+                const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10; // Linha vertical 10 para a esquerda
                 let yRow = yC;
 
                 // Linha 1: nome / profissão
@@ -364,28 +357,20 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(8).text('Local e data:', MARGIN_LEFT, doc.y, { continued: true});
             doc.font('Helvetica').fontSize(8).text(` Joinville, ${dataHoje}`, MARGIN_LEFT + 10, doc.y);
 
-            // *** ALTERAÇÃO 3: Espaço aumentado de 50 para 70 (para assinatura digital) ***
-            let sigY = doc.y + 70; // Espaço para assinaturas
+            // *** ALTERAÇÃO 3: Espaço aumentado para 80 pontos para assinatura digital ***
+            let sigY = doc.y + 80; 
 
             const sigWidth = 240; // Largura de cada bloco de assinatura
-            // Cálculo de espaço corrigido para usar CONTENT_WIDTH
             const sigSpacing = CONTENT_WIDTH - (2 * sigWidth); 
+            // Nova altura para o bloco de assinatura (linha + título + nome + cpf)
+            const sigBlockHeight = 60; // Aumentei de 50 para 60 para mais espaço vertical.
             let currentSigX = MARGIN_LEFT;
 
-            // *** ALTERAÇÃO 4: Função de assinatura modificada ***
-            // Títulos e Nomes agora aparecem ABAIXO da linha
+            // Função helper para desenhar uma assinatura (títulos abaixo da linha)
             const drawSignature = (title, label, subLabel = '', x, yPos) => {
-                
-                // 1. Linha (no yPos, com espaço acima)
                 doc.moveTo(x, yPos).lineTo(x + sigWidth, yPos).stroke();
-                
-                // 2. Título (Abaixo da linha)
                 doc.font('Helvetica-Bold').fontSize(8).text(title || '', x, yPos + 5, { width: sigWidth, align: 'center' });
-                
-                // 3. Nome (Label)
                 doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 15, { width: sigWidth, align: 'center' });
-                
-                // 4. Sub-label (CPF/CNPJ)
                 if (subLabel) {
                     doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 25, { width: sigWidth, align: 'center' });
                 }
@@ -411,9 +396,9 @@ async function generatePdfPromise(data) {
                     sigY
                 );
                 
-                // Cônjuge (Coluna 1, Linha 2)
-                sigY += 60; // Próxima linha
-                currentSigX = MARGIN_LEFT;
+                // *** ALTERAÇÃO 5: Cônjuge abaixo do Contratante, e aumento de sigY para mais espaço ***
+                sigY += sigBlockHeight + 10; // Aumentei o espaçamento entre as linhas de assinatura
+                currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // Mantém na mesma coluna do Contratante
                 drawSignature(
                     'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
@@ -435,7 +420,7 @@ async function generatePdfPromise(data) {
                 
                 let socioIndex = 1; // Começa do Sócio 2 (índice 1)
                 while (socioIndex < numSocios) {
-                    sigY += 60; // Próxima linha
+                    sigY += sigBlockHeight + 10; // Aumentei o espaçamento entre as linhas de assinatura
                     for (let col = 0; col < 2 && socioIndex < numSocios; col++) { // Loop de 2 colunas
                         currentSigX = MARGIN_LEFT + col * (sigWidth + sigSpacing); // Col 1 (0) ou Col 2 (1)
                         const prefix = `socio${socioIndex + 1}`;
