@@ -423,7 +423,7 @@ async function generatePdfPromise(data) {
                 // Loop para os sócios restantes, TODOS na coluna da direita
                 while (socioIndex < numSocios) {
                     // Aumenta o Y para a próxima linha de assinatura
-                    sigY += sigBlockHeight + 10; 
+                    sigY += sigBlockHeight + 25; 
                     
                     // Força o X a ser sempre na coluna da direita
                     currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; 
