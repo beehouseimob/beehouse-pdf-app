@@ -37,7 +37,7 @@ function drawHeader(doc) {
     // 2. Bloco da Direita (Título, Nome da Empresa, Endereço)
     const rightAlignX = PAGE_WIDTH - MARGIN - 250; 
     const blockWidth = 250; 
-    const initialY = MARGIN - 5; 
+    const initialY = MARGIN - 20; 
 
     doc.font('Helvetica-Bold').fontSize(10).text('Autorização de Venda', rightAlignX, initialY, { width: blockWidth, align: 'right' });
     doc.font('Helvetica-Bold').fontSize(10).text('Beehouse Investimentos Imobiliários', rightAlignX, initialY + 12, { width: blockWidth, align: 'right' });
