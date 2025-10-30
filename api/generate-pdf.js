@@ -397,7 +397,7 @@ async function generatePdfPromise(data) {
                 );
                 
                 // *** ALTERAÇÃO 5: Cônjuge abaixo do Contratante, e aumento de sigY para mais espaço ***
-                sigY += sigBlockHeight + 20; // Aumentei o espaçamento entre as linhas de assinatura
+                sigY += sigBlockHeight + 25; // Aumentei o espaçamento entre as linhas de assinatura
                 currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; // Mantém na mesma coluna do Contratante
                 drawSignature(
                     'CÔNJUGE', 
