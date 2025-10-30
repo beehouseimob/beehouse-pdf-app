@@ -428,11 +428,11 @@ async function generatePdfPromise(data) {
                     // Força o X a ser sempre na coluna da direita
                     currentSigX = MARGIN_LEFT + sigWidth + sigSpacing; 
                     
-                    const prefix = `socio${socioIndex}`;
+                    const prefix = `socio${socioIndex + 1}`;
                     
                     drawSignature(
                         `SÓCIO ${socioIndex}`, 
-                        data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex}`, 
+                        data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
                         `CPF/CNPJ: ${data[`${prefix}Cpf`]}` || 'CPF/CNPJ', 
                         currentSigX, 
                         sigY
