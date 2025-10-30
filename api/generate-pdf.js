@@ -305,24 +305,24 @@ async function generatePdfPromise(data) {
             const clausulaIndent = 10;
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
 
-            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true});
-            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, lineBreak: false});
+            doc.font('Helvetica').text(` A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20});
             doc.moveDown(0.5);
 
             doc.font('Helvetica-Bold').text('2º', MARGIN, doc.y, { continued: true, lineBreak: false });
-            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica').text(` O Contratante pagará a Contratada, uma vez concluído o negócio a comissão de ${data.contratoComissaoPct || '6'}% (seis por cento) sobre o valor da venda, no ato do recebimento do sinal. Esta comissão é devida também mesmo fora do prazo desta autorização desde que a venda do imóvel seja efetuado por cliente apresentado pela Contratada ou nos caso em que, comprovadamente, a negociação tiver sido por esta iniciada, observando também o artigo 727 do Código Civil Brasileiro`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, lineBreak: true });
-            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica-Bold').text('3º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text(' A Contratada compromete-se a fazer publicidade do imóvel, podendo colocar placas, anunciar em jornais e meios de divulgação do imóvel ao público.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true });
-            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica-Bold').text('4º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text(' O Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF, RG e carne de IPTU.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(0.5);
             
-            doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true });
-            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', MARGIN + clausulaIndent, doc.y, { align: 'justify', width: clausulaWidth });
+            doc.font('Helvetica-Bold').text('5º', MARGIN, doc.y, { continued: true, lineBreak: false });
+            doc.font('Helvetica').text(' Em caso de qualquer controversia decorrente deste contrato, as partes elegem o Foro da Comarca de Joinville/SC para dirimir quaisquer dúvidas deste contrato, renunciando qualquer outro, por mais privilégio que seja.', MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20 });
             doc.moveDown(1);
 
             const textoFechamento = 'Assim por estarem juntos e contratados, obrigam-se a si e seus herdeiros a cumprir e fazer cumprir o disposto neste contrato, assinando-os em duas vias de igual teor e forma, na presença de testemunhas, a tudo presentes.';
