@@ -1,4 +1,4 @@
-import PDFDocument from 'pdfkit';
+import PDFDocument, { lineWidth } from 'pdfkit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -295,8 +295,41 @@ async function generatePdfPromise(data) {
             doc.x = MARGIN;
             doc.font('Helvetica').fontSize(9);
             
-            const textoPreambulo = 'O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº 14.477.349/0001-23, com inscrição no CRECI/SC sob o nº 7.965-J, situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:';
-            doc.text(textoPreambulo, { align: 'justify', width: CONTENT_WIDTH });
+            // --- Início da alteração para negrito ---
+            // Removida a const textoPreambulo. O texto é renderizado em partes.
+            
+            // Parte 1: Normal
+            doc.text('O Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº ', {
+                continued: true,
+                align: 'justify', 
+                width: CONTENT_WIDTH
+            });
+            
+            // Parte 2: CNPJ em Negrito
+            doc.font('Helvetica-Bold');
+            doc.text('14.477.349/0001-23', {
+                continued: true
+            });
+            
+            // Parte 3: Normal
+            doc.font('Helvetica');
+            doc.text(', com inscrição no CRECI/SC sob o nº ', {
+                continued: true
+            });
+            
+            // Parte 4: CRECI em Negrito
+            doc.font('Helvetica-Bold');
+            doc.text('7.965-J', {
+                continued: true
+            });
+            
+            // Parte 5: Restante do texto em Normal
+            doc.font('Helvetica');
+            doc.text(', situada nesta cidade, na Rua Jacob Eisenhut, 223 - SL 801 Bairro Atiradores, Cep: 89.203-070 - Joinville-SC, a promover a venda do imóvel com a descrição acima, mediante as seguintes condições:', {
+                // As opções de 'align' e 'width' do primeiro .text() se aplicam ao bloco todo.
+            });
+            // --- Fim da alteração ---
+
             doc.moveDown(1);
             
             // ==================================================
@@ -304,7 +337,7 @@ async function generatePdfPromise(data) {
             // ==================================================
             const clausulaIndent = 10;
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
-
+            
             doc.font('Helvetica-Bold').text('1º', MARGIN, doc.y, { continued: true, lineBreak: false});
             doc.font('Helvetica').text(`   A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, MARGIN + clausulaIndent + 20, doc.y, { align: 'justify', width: clausulaWidth - 20});
             doc.moveDown(0.5);
