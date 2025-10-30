@@ -262,6 +262,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
                 <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
                 <div><label>RG nº:</label><input type="text" name="conjugeRg" placeholder="Ex: 9.999.999"></div>
+                <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
                  <div class="grid-col-span-2"></div>
              </div>
