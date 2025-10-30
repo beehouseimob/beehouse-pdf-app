@@ -300,21 +300,21 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(8);
             
             // Texto do Preâmbulo com Negrito
-            doc.text('O(s) Contratante(s) autoriza(m) a Beehouse Investimentos Imobiliários, inscrita no CNPJ sob nº ', {
+            doc.text('O(s) Contratante(s) autoriza(m) a Beehouse Investimentos Imobiliários, inscrita no ', {
                 continued: true,
                 align: 'justify', 
                 width: CONTENT_WIDTH
             });
             doc.font('Helvetica-Bold');
-            doc.text('14.477.349/0001-23', {
+            doc.text('CNPJ sob nº 14.477.349/0001-23', {
                 continued: true
             });
             doc.font('Helvetica');
-            doc.text(', com inscrição no CRECI/SC sob o nº ', {
+            doc.text(', com inscrição no ', {
                 continued: true
             });
             doc.font('Helvetica-Bold');
-            doc.text('7.965-J', {
+            doc.text('CRECI/SC sob o nº 7.965-J', {
                 continued: true
             });
             doc.font('Helvetica');
