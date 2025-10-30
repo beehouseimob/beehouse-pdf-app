@@ -10,7 +10,7 @@ function formatCurrency(value) {
 }
 
 // --- CONSTANTES DE LAYOUT ---
-const MARGIN_LEFT = 40; // Margem esquerda
+const MARGIN_LEFT = 30; // Margem esquerda
 const MARGIN = 50;      // Margem Topo, Direita e Rodapé
 const PAGE_WIDTH = 612; // Largura A4
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN_LEFT - MARGIN; // (612 - 40 - 50 = 522)
