@@ -45,7 +45,6 @@ function drawHeader(doc) {
     doc.text('www.beehouse.imb.br | Fone: (47) 99287-9066', rightAlignX, initialY + 36, { width: blockWidth, align: 'right' }); 
 
     doc.y = MARGIN + 65;
-    MARGIN = MARGIN - 20;
 }
 
 
