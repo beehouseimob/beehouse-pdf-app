@@ -91,7 +91,7 @@ async function generatePdfPromise(data) {
                 const hC = rowHeight * 4; // 4 linhas
                 doc.rect(MARGIN_LEFT, yC, CONTENT_WIDTH, hC).stroke();
                 doc.rect(MARGIN_LEFT, yC, labelBoxWidth, hC).stroke();
-                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CONTRATANTE', -hC / 2, -4, { width: hC, align: 'center' }).restore();
+                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('CONTRATANTE', -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                 const xC_1 = fieldBoxX;
                 const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10;
@@ -138,7 +138,7 @@ async function generatePdfPromise(data) {
                 const hR = rowHeight * 3; // <<< MUDANÇA: 3 linhas (Nome, CPF, Cargo)
                 doc.rect(MARGIN_LEFT, yR, CONTENT_WIDTH, hR).stroke();
                 doc.rect(MARGIN_LEFT, yR, labelBoxWidth, hR).stroke();
-                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(8).text('REPRESENTANTE', -hR / 2, -4, { width: hR, align: 'center' }).restore();
+                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('REP. LEGAL', -hR / 2, -4, { width: hR, align: 'center' }).restore();
                 
                 let yRowR = yR;
                 const xR_1 = fieldBoxX; // Single column X start
@@ -188,7 +188,7 @@ async function generatePdfPromise(data) {
 
                     doc.rect(MARGIN_LEFT, yC, CONTENT_WIDTH, hC).stroke();
                     doc.rect(MARGIN_LEFT, yC, labelBoxWidth, hC).stroke();
-                    doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
+                    doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                     const xC_1 = fieldBoxX;
                     const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10; 
@@ -252,7 +252,7 @@ async function generatePdfPromise(data) {
 
                      doc.rect(MARGIN_LEFT, yConj, CONTENT_WIDTH, hConj).stroke();
                      doc.rect(MARGIN_LEFT, yConj, labelBoxWidth, hConj).stroke();
-                     doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore();
+                     doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore();
 
                      const xConj_1 = fieldBoxX;
                      const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2; // <<< MUDANÇA: 50% split
@@ -300,7 +300,7 @@ async function generatePdfPromise(data) {
 
             doc.rect(MARGIN_LEFT, yI, CONTENT_WIDTH, hI).stroke();
             doc.rect(MARGIN_LEFT, yI, labelBoxWidth, hI).stroke();
-            doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('IMÓVEL', -hI / 2, -4, { width: hI, align: 'center' }).restore();
+            doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yI + hI/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('IMÓVEL', -hI / 2, -4, { width: hI, align: 'center' }).restore();
 
             const xI_1 = fieldBoxX;
             const xI_2 = fieldBoxX + 318;
