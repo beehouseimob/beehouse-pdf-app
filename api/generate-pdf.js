@@ -596,8 +596,8 @@ async function generatePdfPromise(data) {
             // ==========================================
             // <<< FIM DA LÓGICA DE ASSINATURA >>>
             // ==========================================
-
-section             // --- FIM DA LÓGICA DE DESENHO ---
+            
+            // --- FIM DA LÓGICA DE DESENHO ---
 
             doc.end();
 
