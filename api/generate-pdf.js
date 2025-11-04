@@ -184,14 +184,14 @@ async function generatePdfPromise(data) {
                      if (i > 0) y += 20;
 
                     const yC = y;
-                    const hC = rowHeight * 5;
+                    const hC = rowHeight * 5; // 5 Linhas: Nome/Prof, CPF, EC/Regime, End, Email
 
                     doc.rect(MARGIN_LEFT, yC, CONTENT_WIDTH, hC).stroke();
                     doc.rect(MARGIN_LEFT, yC, labelBoxWidth, hC).stroke();
                     doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yC + hC/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text(titulo, -hC / 2, -4, { width: hC, align: 'center' }).restore();
 
                     const xC_1 = fieldBoxX;
-                    const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10;
+                    const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10; 
                     let yRow = yC;
 
                     // Linha 1: nome / profissão
@@ -205,7 +205,7 @@ async function generatePdfPromise(data) {
                     doc.font('Helvetica').fontSize(8).text(data[`${prefix}Profissao`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
                     yRow += rowHeight;
 
-                    // Linha 2: CPF (ALTERADO)
+                    // Linha 2: CPF (ALTERADO - Full width)
                     doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                     doc.font('Helvetica-Bold').fontSize(8).text('CPF:', xC_1 + textPad, yRow + textYPad);
                     labelWidth = doc.widthOfString('CPF:');
@@ -490,15 +490,13 @@ async function generatePdfPromise(data) {
                 // Se o Y proposto + a altura do bloco for maior que o fim da página
                 if (proposedY + sigBlockHeight > pageBottom) {
                     doc.addPage();
-                    // *** ESTA É A CORREÇÃO: ***
                     // 1. Redesenha o cabeçalho na nova página
                     drawHeader(doc); 
                     // 2. Retorna a posição Y *depois* do cabeçalho + uma margem
-                    // (A sua função drawHeader já define doc.y para ~90)
                     return doc.y + 60; 
                 }
                 // Retorna o Y proposto, pois cabe
-return proposedY; 
+                return proposedY; 
             };
 
             // --- LÓGICA DE DESENHO REFEITA ---
@@ -521,6 +519,7 @@ return proposedY;
             // <<< LÓGICA DE ASSINATURA ATUALIZADA >>>
             // ==========================================
             if (authType === 'pj') {
+                // *** CORREÇÃO AQUI: Um bloco só ***
                 const repNome = data.repNome || 'Nome Rep. Legal';
                 const repCpf = data.repCpf || 'CPF Rep. Legal';
                 
@@ -552,7 +551,7 @@ return proposedY;
                     `CPF: ${data.conjugeCpf}` || 'CPF', 
                     col2_X, 
           	     	 currentY
-section       );
+          	     );
 
             } else if (authType === 'socios') {
                 const numSocios = parseInt(data.numSocios, 10) || 1;
@@ -561,7 +560,7 @@ section       );
                     'CONTRATANTE',
                     data.socio1Nome || 'CONTRATANTE', 
           	     	 `CPF: ${data.socio1Cpf}` || 'CPF', 
-s         	 	     col2_X,
+          	 	     col2_X,
                     currentY
           	     );
                 
@@ -571,7 +570,7 @@ s         	 	     col2_X,
             	     	 let nextY = currentY + sigBlockHeight + sigYMargin;
             	     	 // Checa se a *próxima* linha cabe
             	     	 currentY = checkAndSetY(nextY);
-                  _ 
+                    
           	 	     	 const prefix = `socio${socioIndex + 1}`;
                     
           	 	     	 drawSignature(
@@ -581,7 +580,7 @@ s         	 	     col2_X,
               	     	 col2_X, 
           	 	     	 currentY
                     );
-      Fim     	 	     socioIndex++;
+          	 	     socioIndex++;
           	 	   }
 
           	 } else { // Solteiro / Viúvo (authType === 'solteiro')
@@ -598,7 +597,7 @@ s         	 	     col2_X,
             // <<< FIM DA LÓGICA DE ASSINATURA >>>
             // ==========================================
 
-s         // --- FIM DA LÓGICA DE DESENHO ---
+section             // --- FIM DA LÓGICA DE DESENHO ---
 
             doc.end();
 
