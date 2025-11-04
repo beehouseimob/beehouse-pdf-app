@@ -138,7 +138,7 @@ async function generatePdfPromise(data) {
                 const hR = rowHeight * 3; // <<< MUDANÇA: 3 linhas (Nome, CPF, Cargo)
                 doc.rect(MARGIN_LEFT, yR, CONTENT_WIDTH, hR).stroke();
                 doc.rect(MARGIN_LEFT, yR, labelBoxWidth, hR).stroke();
-                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(10).text('REPRESENTANTE', -hR / 2, -4, { width: hR, align: 'center' }).restore();
+                doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(8).text('REPRESENTANTE', -hR / 2, -4, { width: hR, align: 'center' }).restore();
                 
                 let yRowR = yR;
                 const xR_1 = fieldBoxX; // Single column X start
@@ -596,7 +596,7 @@ async function generatePdfPromise(data) {
             // ==========================================
             // <<< FIM DA LÓGICA DE ASSINATURA >>>
             // ==========================================
-            
+
             // --- FIM DA LÓGICA DE DESENHO ---
 
             doc.end();
