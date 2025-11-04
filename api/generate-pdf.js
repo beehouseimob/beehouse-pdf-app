@@ -112,9 +112,9 @@ async function generatePdfPromise(data) {
                 // Linha 2: CPF / RG
                 doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
-                doc.font('Helvetica-Bold').fontSize(8).text('CPF:', xC_1 + textPad, yRow + textYPad);
-                labelWidth = doc.widthOfString('CPF:');
-                doc.font('Helvetica').fontSize(8).text(data[`${prefix}Cpf`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
+                doc.font('Helvetica-Bold').fontSize(8).text('CPF/CNPJ:', xC_1 + textPad, yRow + textYPad);
+                labelWidth = doc.widthOfString('CPF/CNPJ:');
+                doc.font('Helvetica').fontSize(8).text(data[`${prefix}Cpf/CNPJ`] || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
                 doc.font('Helvetica-Bold').fontSize(8).text('RG:', xC_2 + textPad, yRow + textYPad);
                 labelWidth = doc.widthOfString('RG:');
                 doc.font('Helvetica').fontSize(8).text(data[`${prefix}Rg`] || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
@@ -174,8 +174,8 @@ async function generatePdfPromise(data) {
                  doc.font('Helvetica-Bold').fontSize(8).text('Nome:', xConj_1 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('Nome:');
                  doc.font('Helvetica').fontSize(8).text(data.conjugeNome || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
-                 doc.font('Helvetica-Bold').fontSize(8).text('CPF:', xConj_2 + textPad, yRowConj + textYPad);
-                 labelWidth = doc.widthOfString('CPF:');
+                 doc.font('Helvetica-Bold').fontSize(8).text('CPF/CNPJ:', xConj_2 + textPad, yRowConj + textYPad);
+                 labelWidth = doc.widthOfString('CPF/CNPJ:');
                  doc.font('Helvetica').fontSize(8).text(data.conjugeCpf || '', xConj_2 + textPad + labelWidth + textPad, yRowConj + textYPad);
                  doc.font('Helvetica-Bold').fontSize(8).text('RG:', xConj_3 + textPad, yRowConj + textYPad);
                  labelWidth = doc.widthOfString('RG:');

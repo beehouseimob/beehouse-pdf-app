@@ -266,7 +266,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 <h3>${titulo}</h3>
                 <div class="form-grid">
                     <div><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
-                    <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
+                    <div><label>CPF/CNPJ:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
                     <div><label>RG nº:</label><input type="text" name="${prefix}Rg" placeholder="Ex: 9.999.999"></div>
                     <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
                     <div><label>Estado Civil:</label><select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')"><option value="">Selecione...</option>${estadoCivilOptions}</select></div>
@@ -283,7 +283,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
             <h3>CÔNJUGE</h3>
              <div class="form-grid">
                  <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
-                 <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
+                 <div><label>CPF/CNPJ:</label><input type="text" name="conjugeCpf"></div>
                  <div><label>RG nº:</label><input type="text" name="conjugeRg" placeholder="Ex: 9.999.999"></div>
                  <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
