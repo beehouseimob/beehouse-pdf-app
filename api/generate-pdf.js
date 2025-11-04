@@ -490,7 +490,7 @@ async function generatePdfPromise(data) {
                 doc.font('Helvetica-Bold').fontSize(8).text(label || '', x, yPos + 15, { width: sigWidth, align: 'center' });
                 if (subLabel) {
                     doc.font('Helvetica').fontSize(8).text(subLabel, x, yPos + 25, { width: sigWidth, align: 'center' });
-      _         }
+               }
             };
 
             // *** HELPER DE CHECAGEM DE PÁGINA (CORRIGIDO) ***
