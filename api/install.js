@@ -224,9 +224,10 @@ async function handlePostSelection(req, res) {
 function getSelectionHtml(companyId, memberId) {
     const buildUrl = (type) => `/api/install?type=${type}${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Selecionar Tipo</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}a{display:block;background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;text-decoration:none;margin-bottom:15px;font-weight:700;transition:background-color .2s}a:hover{background-color:#0056b3}a.secondary{background-color:#6c757d}a.secondary:hover{background-color:#5a6268}
-    a.tertiary{background-color:#28a745}a.tertiary:hover{background-color:#218838} /* <<< NOVO ESTILO */
+    a.tertiary{background-color:#28a745}a.tertiary:hover{background-color:#218838}
     </style></head><body><div class="container"><h2>Selecione o Tipo de Autorização de Venda</h2><a href="${buildUrl('solteiro')}">Pessoa Física (Solteiro/Viúvo)</a><a href="${buildUrl('casado')}">Pessoa Física (Casado/União)</a><a href="${buildUrl('socios_qtd')}" class="secondary">Pessoa Física (Vários Sócios)</a>
-    <a href="${buildUrl('pj')}" class="tertiary">Pessoa Jurídica (Empresa)</a> </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,450),BX.setTitle("Selecionar Tipo")})</script></body></html>`;
+    <a href="${buildUrl('pj')}" class="tertiary">Pessoa Jurídica (Empresa)</a>
+    </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,450),BX.setTitle("Selecionar Tipo")})</script></body></html>`;
 }
 
 // HTML para perguntar a quantidade de sócios (COM BOTÃO VOLTAR)
@@ -277,7 +278,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
 
         // ==================================================
-        // ALTERAÇÃO: Adicionado grid-col-span-2 ao RegimeDiv
+        // ALTERAÇÃO: Removido DIV do RG
         // ==================================================
         contratanteHtml += `
             <div class="form-section">
@@ -285,7 +286,6 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                 <div class="form-grid">
                     <div><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
                     <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
-                    <div><label>RG nº:</label><input type="text" name="${prefix}Rg" placeholder="Ex: 9.999.999"></div>
                     <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
                     <div><label>Estado Civil:</label><select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')"><option value="">Selecione...</option>${estadoCivilOptions}</select></div>
                     <div id="${prefix}RegimeDiv" class="grid-col-span-2" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
@@ -302,7 +302,6 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
              <div class="form-grid">
                  <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
                  <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
-                 <div><label>RG nº:</label><input type="text" name="conjugeRg" placeholder="Ex: 9.999.999"></div>
                  <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
                  <div class="grid-col-span-2"></div>
@@ -346,7 +345,7 @@ function getFormHtmlPJ(pjData) {
         <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
     `;
 
-    // Bloco HTML Específico para PJ
+    // Bloco HTML Específico para PJ (COM RG REMOVIDO)
     const pjHtml = `
         <div class="form-section">
             <h3 class="pj">EMPRESA (CONTRATANTE)</h3>
@@ -364,7 +363,6 @@ function getFormHtmlPJ(pjData) {
             <div class="form-grid">
                 <div><label>Nome Completo:</label><input type="text" name="repNome"></div>
                 <div><label>CPF:</label><input type="text" name="repCpf"></div>
-                <div><label>RG nº:</label><input type="text" name="repRg" placeholder="Ex: 9.999.999"></div>
                 <div><label>Cargo:</label><input type="text" name="repCargo" placeholder="Ex: Sócio-Administrador"></div>
             </div>
         </div>
