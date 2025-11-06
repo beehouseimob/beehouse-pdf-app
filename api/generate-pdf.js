@@ -312,8 +312,8 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica-Bold').fontSize(8).text('Imóvel:', xI_1 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Imóvel:');
             doc.font('Helvetica').fontSize(8).text(data.imovelDescricao || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
-            doc.font('Helvetica-Bold').fontSize(8).text('Valor:', xI_2 + textPad, yIRow + textYPad);
-            labelWidth = doc.widthOfString('Valor:');
+            doc.font('Helvetica-Bold').fontSize(8).text('Valor por unidade:', xI_2 + textPad, yIRow + textYPad);
+            labelWidth = doc.widthOfString('Valor por unidade:');
             doc.font('Helvetica').fontSize(8).text(formatCurrency(data.imovelValor) || '', xI_2 + textPad + labelWidth + textPad, yIRow + textYPad);
             yIRow += rHI;
 
