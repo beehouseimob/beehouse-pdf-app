@@ -135,7 +135,7 @@ async function generatePdfPromise(data) {
 
                 // --- 2. Bloco REPRESENTANTE LEGAL (ALTERADO) ---
                 const yR = y;
-                const hR = rowHeight * 3; // <<< MUDANÇA: 3 linhas (Nome, CPF, Cargo)
+                const hR = rowHeight * 3; // 3 linhas (Nome, CPF, Cargo)
                 doc.rect(MARGIN_LEFT, yR, CONTENT_WIDTH, hR).stroke();
                 doc.rect(MARGIN_LEFT, yR, labelBoxWidth, hR).stroke();
                 doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('REP. LEGAL', -hR / 2, -4, { width: hR, align: 'center' }).restore();
@@ -158,7 +158,6 @@ async function generatePdfPromise(data) {
                 yRowR += rowHeight;
 
                 // NEW Linha 3: Cargo
-                // No horizontal line needed at the bottom of the last cell
                 doc.font('Helvetica-Bold').fontSize(8).text('Cargo:', xR_1 + textPad, yRowR + textYPad);
                 labelWidth = doc.widthOfString('Cargo:');
                 doc.font('Helvetica').fontSize(8).text(data.repCargo || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
@@ -271,15 +270,15 @@ async function generatePdfPromise(data) {
 
                      // Linha 2 Cônjuge: Profissão
                      doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
-                        
-                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
+                        
+                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
                      doc.font('Helvetica-Bold').fontSize(8).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                      labelWidth = doc.widthOfString('Profissão:');
                      doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
                      yRowConj += rowHeight;
                      
                      // Linha 3 Cônjuge: Email
-                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
+                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
                      doc.font('Helvetica-Bold').fontSize(8).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
                      labelWidth = doc.widthOfString('Email:');
                      doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
@@ -352,7 +351,7 @@ async function generatePdfPromise(data) {
             doc.font('Helvetica').fontSize(8).text(formatCurrency(data.imovelValorCondominio) || '', xI_1 + textPad + labelWidth + textPad, yIRow + textYPad);
             doc.font('Helvetica-Bold').fontSize(8).text('Chamada de Capital:', xI_L5_2 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Chamada de Capital:');
-            doc.font('Helvetica').fontSize(8).text(data.imovelChamadaCapital || '', xI_L5_2 + textPad + labelWidth + textPad, yIRow + textYPad); // Removido formatCurrency
+            doc.font('Helvetica').fontSize(8).text(data.imovelChamadaCapital || '', xI_L5_2 + textPad + labelWidth + textPad, yIRow + textYPad);
             doc.font('Helvetica-Bold').fontSize(8).text('Nº de parcelas:', xI_L5_3 + textPad, yIRow + textYPad);
             labelWidth = doc.widthOfString('Nº de parcelas:');
             doc.font('Helvetica').fontSize(8).text(data.imovelNumParcelas || '', xI_L5_3 + textPad + labelWidth + textPad, yIRow + textYPad);
@@ -532,7 +531,7 @@ async function generatePdfPromise(data) {
                     `p.p. ${repNome} - CPF: ${repCpf}`, // p.p. = "por procuração" / "em nome de"
                     col2_X, 
                     currentY
-          	     );
+                 );
             
             } else if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
@@ -548,13 +547,13 @@ async function generatePdfPromise(data) {
                 currentY = checkAndSetY(nextY);
 
                 // Cônjuge (Coluna 2, Linha 2)
-          	     drawSignature(
-            	     	 'CÔNJUGE', 
+                 drawSignature(
+                         'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
                     `CPF: ${data.conjugeCpf}` || 'CPF', 
                     col2_X, 
-          	     	 currentY
-          	     );
+                     currentY
+                 );
 
             } else if (authType === 'socios') {
                 const numSocios = parseInt(data.numSocios, 10) || 1;
@@ -562,40 +561,40 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'CONTRATANTE',
                     data.socio1Nome || 'CONTRATANTE', 
-          	     	 `CPF: ${data.socio1Cpf}` || 'CPF', 
-          	 	     col2_X,
+                     `CPF: ${data.socio1Cpf}` || 'CPF', 
+                     col2_X,
                     currentY
-          	     );
+                 );
                 
-          	     let socioIndex = 1; 
+                 let socioIndex = 1; 
                 
-          	 	   while (socioIndex < numSocios) {
-            	     	 let nextY = currentY + sigBlockHeight + sigYMargin;
-            	     	 // Checa se a *próxima* linha cabe
-            	     	 currentY = checkAndSetY(nextY);
+                   while (socioIndex < numSocios) {
+                         let nextY = currentY + sigBlockHeight + sigYMargin;
+                D          // Checa se a *próxima* linha cabe
+                         currentY = checkAndSetY(nextY);
                     
-          	 	     	 const prefix = `socio${socioIndex + 1}`;
+                         const prefix = `socio${socioIndex + 1}`;
                     
-          	 	     	 drawSignature(
-            	 	     	 `CONTRATANTE ${socioIndex + 1}`, 
-              	     	 data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
-          	 	     	 `CPF: ${data[`${prefix}Cpf`]}` || 'CPF', 
-              	     	 col2_X, 
-          	 	     	 currentY
+                   ndex       drawSignature(
+                             `CONTRATANTE ${socioIndex + 1}`, 
+                         data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
+                         `CPF: ${data[`${prefix}Cpf`]}` || 'CPF', 
+in                          col2_X, 
+                         currentY
                     );
-          	 	     socioIndex++;
-          	 	   }
+                     socioIndex++;
+section             }
 
-          	 } else { // Solteiro / Viúvo (authType === 'solteiro')
-          	 	 // Contratante (Coluna 2, Linha 1)
-          	 	 drawSignature(
-            	 	 	 'CONTRATANTE', 
-            	 	 	 data.contratanteNome || 'NOME CONTRATANTE', 
-          	 	 	 `CPF: ${data.contratanteCpf}` || 'CPF', 
-            	 	 	 col2_X, 
-         	 	 	     currentY
-          	 	 );
-        	   }
+             } else { // Solteiro / Viúvo (authType === 'solteiro')
+                 // Contratante (Coluna 2, Linha 1)
+                 drawSignature(
+                         'CONTRATANTE', 
+A                       data.contratanteNome || 'NOME CONTRATANTE', 
+                     `CPF: ${data.contratanteCpf}` || 'CPF', 
+                         col2_X, 
+                         currentY
+                 );
+               }
             // ==========================================
             // <<< FIM DA LÓGICA DE ASSINATURA >>>
             // ==========================================
@@ -623,7 +622,7 @@ export default async function handler(req, res) {
     try {
         const data = req.body;
         console.log('Iniciando geração do PDF com dados:', data);
-        
+A       
         // Define o nome do arquivo com base no tipo
         let fileName = 'Autorizacao_Venda_Contratante.pdf';
         if (data.authType === 'pj') {
@@ -637,7 +636,7 @@ export default async function handler(req, res) {
         console.log('PDF pronto. Enviando resposta...');
 
         res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+A       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
         res.end(pdfBuffer);
 

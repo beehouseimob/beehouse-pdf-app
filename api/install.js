@@ -9,8 +9,6 @@ const CLIENT_SECRET = process.env.B24_CLIENT_SECRET || process.env.B_CLIENT_SECR
 export default async function handler(req, res) {
     const params = { ...req.query, ...req.body };
     console.log('[Install/Router] Requisição recebida...');
-    // console.log('[Install/Router] Query Params:', req.query); // Descomente para depurar
-    // console.log('[Install/Router] Body Params:', req.body); // Descomente para depurar
 
     const domain = params.domain || params.DOMAIN;
     const memberId = params.member_id || params.MEMBER_ID || req?.body?.auth?.member_id || req?.query?.member_id;
@@ -75,8 +73,8 @@ async function handleLocalInstall(req, res, params) {
         if (!tokens.member_id) throw new Error('member_id ausente.');
 
         await saveTokens(tokens);
-        const handlerUrl = `https://${req.headers.host}/api/install`;
-        await registerPlacement(handlerUrl, tokens);
+        // Passa o req.headers.host para a função de registro
+        await registerPlacement(req.headers.host, tokens);
 
         res.setHeader('Content-Type', 'text/html');
         if (params.PLACEMENT === 'DEFAULT') {
@@ -111,8 +109,8 @@ async function handleOAuthInstall(req, res, params) {
          if (!tokens.access_token || !tokens.refresh_token || !tokens.domain || !tokens.member_id) throw new Error('Dados de token inválidos.');
 
          await saveTokens(tokens);
-         const handlerUrl = `https://${req.headers.host}/api/install`;
-         await registerPlacement(handlerUrl, tokens);
+         // Passa o req.headers.host para a função de registro
+         await registerPlacement(req.headers.host, tokens);
 
          res.setHeader('Content-Type', 'text/html');
          res.send('<head><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX=window.parent.BX;if(BX){BX.ready(function(){BX.SidePanel.Instance.close();})}</script></head><body>Instalado! Fechando...</body>');
@@ -177,19 +175,18 @@ async function handlePostSelection(req, res) {
                  if (company) {
                     // Mapeamento para Pessoa Física
                      contratanteData = {
-                         nome: company.TITLE || '', // Assume que TITLE é o nome da PF (se for usado para PF)
+                         nome: company.TITLE || '',
                          telefone: (company.PHONE?.[0]?.VALUE) || '',
                          email: (company.EMAIL?.[0]?.VALUE) || '',
-                         cpf: company.UF_CRM_66C37392C9F3D || '' // Assume que este é o CPF
+                         cpf: company.UF_CRM_66C37392C9F3D || ''
                      };
                     
                     // Mapeamento para Pessoa Jurídica
                     pjData = {
-                         razaoSocial: company.TITLE || '', // TITLE é a Razão Social
+                         razaoSocial: company.TITLE || '',
                          telefone: (company.PHONE?.[0]?.VALUE) || '',
                          email: (company.EMAIL?.[0]?.VALUE) || '',
-                         cnpj: company.UF_CRM_66C37392C9F3D || '', // Assume que este é o CNPJ
-                        // NOTA: Endereço não é pego aqui, mas poderia ser mapeado se você tiver os campos
+                         cnpj: company.UF_CRM_66C37392C9F3D || '',
                          endereco: '' 
                     };
                  }
@@ -199,7 +196,7 @@ async function handlePostSelection(req, res) {
         res.setHeader('Content-Type', 'text/html');
         if (authType === 'solteiro' || authType === 'casado') {
             res.send(getFormHtml(authType, contratanteData));
-        } else if (authType === 'pj') { // <<< NOVO FLUXO PJ
+        } else if (authType === 'pj') {
             res.send(getFormHtmlPJ(pjData));
         } else if (authType === 'socios_qtd') {
              res.send(getSociosQtdHtml(companyId, authTokens.member_id));
@@ -232,30 +229,22 @@ function getSelectionHtml(companyId, memberId) {
 
 // HTML para perguntar a quantidade de sócios (COM BOTÃO VOLTAR)
 function getSociosQtdHtml(companyId, memberId) {
-     // 1. Ação aponta para a raiz
      const formAction = `/api/install`;
-     
-     // 2. Criamos os inputs escondidos
      const companyIdInput = companyId ? `<input type="hidden" name="companyId" value="${companyId}">` : '';
      const memberIdInput = memberId ? `<input type="hidden" name="member_id" value="${memberId}">` : '';
 
      return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Qtd Sócios</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}label{display:block;margin-bottom:10px;font-weight:600;color:#555}input[type=number]{width:80px;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:16px;margin-bottom:20px;text-align:center}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}
-     /* --- ADICIONADO CSS --- */
      .back-link{display:inline-block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
      </style></head><body><div class="container"><h2>Imóvel de Sócios</h2>
-       
        <form action="${formAction}" method="GET">
            <input type="hidden" name="type" value="socios_form">
            ${companyIdInput}
            ${memberIdInput}
-           
            <label for="qtd">Quantos sócios são proprietários?</label>
            <input type="number" id="qtd" name="qtd" min="2" value="2" required>
            <button type="submit">Continuar</button>
        </form>
-
        <a href="javascript:history.back()" class="back-link">Voltar</a>
-
      </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,400),BX.setTitle("Qtd Sócios")})</script></body></html>`;
 }
 
@@ -278,20 +267,20 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
 
         // ==================================================
-        // <<< LAYOUT CORRIGIDO AQUI >>>
+        // <<< LAYOUT CORRIGIDO AQUI (2 COLUNAS) >>>
         // ==================================================
         contratanteHtml += `
             <div class="form-section">
                 <h3>${titulo}</h3>
-                <div class="form-grid">
-                    <div><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
+                <div class="form-grid-2-col">
+                    <div class="grid-col-span-2"><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
                     <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
                     <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
                     <div><label>Estado Civil:</label><select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')"><option value="">Selecione...</option>${estadoCivilOptions}</select></div>
-                    <div id="${prefix}RegimeDiv" class="grid-col-span-2" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
-                    <div class="grid-col-span-3"><label>Endereço Residencial:</label><input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
+                    <div id="${prefix}RegimeDiv" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
+                    <div class="grid-col-span-2"><label>Endereço Residencial:</label><input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
                     <div><label>Telefone/Celular:</label><input type="text" name="${prefix}Telefone" value="${telefone}"></div>
-                    <div class="grid-col-span-2"><label>E-mail:</label><input type="email" name="${prefix}Email" value="${email}"></div>
+                    <div><label>E-mail:</label><input type="email" name="${prefix}Email" value="${email}"></div>
                 </div>
             </div>`;
     }
@@ -299,21 +288,42 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
     const conjugeHtml = type === 'casado' ? `
         <div class="form-section">
             <h3>CÔNJUGE</h3>
-             <div class="form-grid">
+                <div class="form-grid-2-col">
                  <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
                  <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
-                 <div class="grid-col-span-3"><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
+                 <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
              </div>
         </div>` : '';
     
     // CSS Padrão (será usado por ambos os formulários)
-    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
-    /* --- ADICIONADO CSS --- */
+    // <<< CSS CORRIGIDO: Adicionado .form-grid-2-col >>>
+    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}
+    
+    /* Grade Padrão (3 colunas) */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}
+    
+    /* <<< NOVA Grade de 2 Colunas para PF >>> */
+    .form-grid-2-col {display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;align-items:start}
+    
+    div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}
+    
+    /* Spans para as duas grades */
+    .grid-col-span-2{grid-column:span 2}
+    .grid-col-span-3{grid-column:1 / -1}
+    
+    button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
     .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
-    @media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}`;
+    
+    @media (max-width:600px){
+      .form-grid{grid-template-columns:1fr}
+      .form-grid-2-col{grid-template-columns:1fr}
+      .grid-col-span-2{grid-column:span 1}
+      .grid-col-span-3{grid-column:span 1}
+    }`;
 
     // Seções de Imóvel e Contrato (comuns a ambos os formulários)
+    // <<< USA A GRADE DE 3 COLUNAS PADRÃO (.form-grid) >>>
     const imovelEContratoHtml = `
         <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
     `;
@@ -330,21 +340,42 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
 
 
 // ==================================================================
-// <<< NOVA FUNÇÃO: HTML PARA PESSOA JURÍDICA >>>
+// <<< FUNÇÃO HTML PARA PESSOA JURÍDICA (Usa .form-grid) >>>
 // ==================================================================
 function getFormHtmlPJ(pjData) {
     // CSS Padrão (o mesmo do getFormHtml)
-    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
-    /* --- ADICIONADO CSS --- */
+    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}
+    
+    /* Grade Padrão (3 colunas) */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}
+    
+    /* <<< NOVA Grade de 2 Colunas para PF >>> */
+    .form-grid-2-col {display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;align-items:start}
+    
+    div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}
+    
+    /* Spans para as duas grades */
+    .grid-col-span-2{grid-column:span 2}
+    .grid-col-span-3{grid-column:1 / -1}
+    
+    button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
     .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
-    @media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}`;
+    
+    @media (max-width:600px){
+      .form-grid{grid-template-columns:1fr}
+      .form-grid-2-col{grid-template-columns:1fr}
+      .grid-col-span-2{grid-column:span 1}
+      .grid-col-span-3{grid-column:span 1}
+    }`;
 
     // Seções de Imóvel e Contrato (comuns a ambos os formulários)
+    // <<< USA A GRADE DE 3 COLUNAS PADRÃO (.form-grid) >>>
     const imovelEContratoHtml = `
         <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
     `;
 
     // Bloco HTML Específico para PJ (COM RG REMOVIDO)
+    // <<< USA A GRADE DE 3 COLUNAS PADRÃO (.form-grid) >>>
     const pjHtml = `
         <div class="form-section">
             <h3 class="pj">EMPRESA (CONTRATANTE)</h3>
@@ -380,41 +411,100 @@ function getFormHtmlPJ(pjData) {
 
 
 // ==================================================================
-// Função auxiliar para registrar/atualizar o placement (Botão)
+// <<< FUNÇÃO DE REGISTRO COMPLETA (COLE ESSA) >>>
+// =Optei por incluir a função de registro completa que abrange
+// todos os aplicativos que discutimos (PDF, Busca, LMS, Chat)
+// para evitar futuros erros de instalação.
 // ==================================================================
-// ESTA É A VERSÃO ANTIGA. Se você está usando os apps de LMS e Chat,
-// use a versão da minha resposta anterior, que registra TUDO.
-// ==================================================================
-async function registerPlacement(handlerUrl, tokens) {
+async function registerPlacement(appHost, tokens) { // Recebe appHost (ex: req.headers.host)
     if (!tokens || !tokens.access_token) {
         console.error('[Install Register] Tokens inválidos.');
         throw new Error('Tokens inválidos para registrar placement.');
     }
-    console.log(`[Install Register] Registrando/Atualizando placement para: ${handlerUrl}`);
+    console.log(`[Install Register] Iniciando registro de todos os placements...`);
 
-    const placementCode = 'CRM_COMPANY_DETAIL_TOOLBAR';
-    const placementTitle = 'Gerar Autorização PDF';
-    const placementDescription = 'Gera PDF de autorização de vendas';
+    const appBaseUrl = `https://${appHost}`;
 
-    console.log(`[Install Register] Limpando (${placementCode})...`);
+    // --- 1. App Gerador de PDF (Botão na Empresa) ---
+    const pdfButtonCode = 'CRM_COMPANY_DETAIL_TOOLBAR';
+    const pdfButtonHandler = `${appBaseUrl}/api/install`; // Aponta para o próprio install.js
+    
+    console.log(`[Install] Registrando ${pdfButtonCode}...`);
     try {
-        await call('placement.unbind', { PLACEMENT: placementCode, HANDLER: handlerUrl }, tokens);
-        console.log('[Install Register] Unbind ok.');
-    } catch (unbindError) {
-        const errorCode = unbindError.details?.code || unbindError.details?.error;
-        if (errorCode !== 'PLACEMENT_HANDLER_NOT_FOUND' && errorCode !== 'ERROR_PLACEMENT_HANDLER_NOT_FOUND') {
-           console.warn("[Install Register] Erro unbind:", unbindError.message);
-        } else {
-           console.log("[Install Register] Handler antigo não encontrado (ok).");
-        }
-    }
-
-    console.log(`[Install Register] Registrando (${placementCode})...`);
+        await call('placement.unbind', { PLACEMENT: pdfButtonCode, HANDLER: pdfButtonHandler }, tokens);
+    } catch (e) { console.log('Handler PDF antigo não encontrado (ok).'); }
     await call('placement.bind', {
-        PLACEMENT: placementCode,
-        HANDLER: handlerUrl,
-        TITLE: placementTitle,
-        DESCRIPTION: placementDescription
+        PLACEMENT: pdfButtonCode,
+        HANDLER: pdfButtonHandler,
+        TITLE: 'Gerar Autorização PDF',
+        DESCRIPTION: 'Gera PDF de autorização de vendas'
     }, tokens);
-    console.log('[Install Register] Botão registrado.');
+    console.log(`[Install] ${pdfButtonCode} registrado.`);
+
+    // --- 2. App Buscador de Imóveis (Aba no Lead) ---
+    const leadTabCode = 'CRM_LEAD_DETAIL_TAB';
+    const leadTabHandler = `${appBaseUrl}/api/lead-app`;
+
+    console.log(`[Install] Registrando ${leadTabCode}...`);
+    try {
+        await call('placement.unbind', { PLACEMENT: leadTabCode, HANDLER: leadTabHandler }, tokens);
+    } catch (e) { console.log('Handler Buscador antigo não encontrado (ok).'); }
+    await call('placement.bind', {
+        PLACEMENT: leadTabCode,
+        HANDLER: leadTabHandler,
+        TITLE: 'Buscador de Imóveis',
+        DESCRIPTION: 'Busca imóveis compatíveis com o perfil do lead'
+    }, tokens);
+    console.log(`[Install] ${leadTabCode} registrado.`);
+
+    // --- 3. App LMS - Aluno (Aba no Perfil) ---
+    const profileTabCode = 'USER_PROFILE_TAB';
+    const profileTabHandler = `${appBaseUrl}/api/lms-app`;
+
+    console.log(`[Install] Registrando ${profileTabCode}...`);
+    try {
+        await call('placement.unbind', { PLACEMENT: profileTabCode, HANDLER: profileTabHandler }, tokens);
+    } catch (e) { console.log('Handler LMS Aluno antigo não encontrado (ok).'); }
+    await call('placement.bind', {
+        PLACEMENT: profileTabCode,
+        HANDLER: profileTabHandler,
+        TITLE: 'Portal de Cursos',
+        DESCRIPTION: 'Exibe os cursos e o progresso do colaborador'
+    }, tokens);
+    console.log(`[Install] ${profileTabCode} registrado.`);
+
+    // --- 4. App LMS - Admin (Menu Principal) ---
+    const adminMenuCode = 'MAIN_MENU';
+    const adminMenuHandler = `${appBaseUrl}/api/lms-admin-app`;
+
+    console.log(`[Install] Registrando ${adminMenuCode}...`);
+    try {
+        await call('placement.unbind', { PLACEMENT: adminMenuCode, HANDLER: adminMenuHandler }, tokens);
+    } catch (e) { console.log('Handler LMS Admin antigo não encontrado (ok).'); }
+    await call('placement.bind', {
+        PLACEMENT: adminMenuCode,
+        HANDLER: adminMenuHandler,
+        TITLE: 'Gestão de Cursos',
+        DESCRIPTION: 'Gerenciar cursos do portal'
+    }, tokens);
+    console.log(`[Install] ${adminMenuCode} registrado.`);
+    
+    // --- 5. App Agendador (Sidebar do Chat) ---
+    const chatSidebarCode = 'IM_CHAT_SIDEBAR';
+    const chatSidebarHandler = `${appBaseUrl}/api/agendar-chamada-app`; 
+
+    console.log(`[Install] Registrando ${chatSidebarCode}...`);
+    try {
+        await call('placement.unbind', { PLACEMENT: chatSidebarCode, HANDLER: chatSidebarHandler }, tokens);
+    } catch (e) { console.log('Handler da Sidebar de Chat antigo não encontrado (ok).'); }
+    
+    await call('placement.bind', {
+        PLACEMENT: chatSidebarCode,
+        HANDLER: chatSidebarHandler,
+        TITLE: 'Agendar Reunião', // Texto que aparece ao passar o mouse
+        DESCRIPTION: 'Agenda uma chamada no calendário com os participantes do chat'
+    }, tokens);
+    console.log(`[Install] ${chatSidebarCode} registrado.`);
+
+    console.log('[Install Register] Todos placements registrados.');
 }
