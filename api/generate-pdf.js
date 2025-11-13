@@ -81,12 +81,12 @@ async function generatePdfPromise(data) {
             // --- LÓGICA CONDICIONAL PARA CONTRATANTES ---
             const authType = data.authType;
 
-            // ==================================================
-            // <<< INÍCIO DO NOVO FLUXO PJ >>>
-            // ==================================================
-            if (authType === 'pj') {
-                
-                // --- 1. Bloco EMPRESA (CONTRATANTE) ---
+            // ==================================================
+            // <<< INÍCIO DO NOVO FLUXO PJ >>>
+            // ==================================================
+            if (authType === 'pj') {
+                
+                // --- 1. Bloco EMPRESA (CONTRATANTE) ---
                 const yC = y;
                 const hC = rowHeight * 4; // 4 linhas
                 doc.rect(MARGIN_LEFT, yC, CONTENT_WIDTH, hC).stroke();
@@ -97,14 +97,14 @@ async function generatePdfPromise(data) {
                 const xC_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2 - 10;
                 let yRow = yC;
 
-                // Linha 1: Razão Social
+                // Linha 1: Razão Social
                 doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.font('Helvetica-Bold').fontSize(8).text('Razão Social:', xC_1 + textPad, yRow + textYPad);
                 labelWidth = doc.widthOfString('Razão Social:');
                 doc.font('Helvetica').fontSize(8).text(data.empresaRazaoSocial || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
                 yRow += rowHeight;
 
-                // Linha 2: CNPJ / Email
+                // Linha 2: CNPJ / Email
                 doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
                 doc.font('Helvetica-Bold').fontSize(8).text('CNPJ:', xC_1 + textPad, yRow + textYPad);
@@ -115,7 +115,7 @@ async function generatePdfPromise(data) {
                 doc.font('Helvetica').fontSize(8).text(data.empresaEmail || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
                 yRow += rowHeight;
 
-                // Linha 3: Telefone / IE
+                // Linha 3: Telefone / IE
                 doc.moveTo(fieldBoxX, yRow + rowHeight).lineTo(endX, yRow + rowHeight).stroke();
                 doc.moveTo(xC_2, yRow).lineTo(xC_2, yRow + rowHeight).stroke();
                 doc.font('Helvetica-Bold').fontSize(8).text('Telefone:', xC_1 + textPad, yRow + textYPad);
@@ -126,55 +126,55 @@ async function generatePdfPromise(data) {
                 doc.font('Helvetica').fontSize(8).text(data.empresaIe || '', xC_2 + textPad + labelWidth + textPad, yRow + textYPad);
                 yRow += rowHeight;
 
-                // Linha 4: Endereço Sede
+                // Linha 4: Endereço Sede
                 doc.font('Helvetica-Bold').fontSize(8).text('Endereço da Sede:', xC_1 + textPad, yRow + textYPad);
                 labelWidth = doc.widthOfString('Endereço da Sede:');
                 doc.font('Helvetica').fontSize(8).text(data.empresaEndereco || '', xC_1 + textPad + labelWidth + textPad, yRow + textYPad);
                 
-                y = yRow + rowHeight + 15; // Próximo Y
+                y = yRow + rowHeight + 15; // Próximo Y
 
-                // --- 2. Bloco REPRESENTANTE LEGAL (ALTERADO) ---
+                // --- 2. Bloco REPRESENTANTE LEGAL (ALTERADO) ---
                 const yR = y;
                 const hR = rowHeight * 3; // <<< MUDANÇA: 3 linhas (Nome, CPF, Cargo)
                 doc.rect(MARGIN_LEFT, yR, CONTENT_WIDTH, hR).stroke();
                 doc.rect(MARGIN_LEFT, yR, labelBoxWidth, hR).stroke();
                 doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yR + hR/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('REP. LEGAL', -hR / 2, -4, { width: hR, align: 'center' }).restore();
-                
-                let yRowR = yR;
-                const xR_1 = fieldBoxX; // Single column X start
+                
+                let yRowR = yR;
+                const xR_1 = fieldBoxX; // Single column X start
 
-                // NEW Linha 1: Nome
-                doc.moveTo(fieldBoxX, yRowR + rowHeight).lineTo(endX, yRowR + rowHeight).stroke(); // Horizontal line
-                doc.font('Helvetica-Bold').fontSize(8).text('Nome:', xR_1 + textPad, yRowR + textYPad);
-                labelWidth = doc.widthOfString('Nome:');
-                doc.font('Helvetica').fontSize(8).text(data.repNome || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
-                yRowR += rowHeight;
+                // NEW Linha 1: Nome
+                doc.moveTo(fieldBoxX, yRowR + rowHeight).lineTo(endX, yRowR + rowHeight).stroke(); // Horizontal line
+                doc.font('Helvetica-Bold').fontSize(8).text('Nome:', xR_1 + textPad, yRowR + textYPad);
+                labelWidth = doc.widthOfString('Nome:');
+                doc.font('Helvetica').fontSize(8).text(data.repNome || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
+                yRowR += rowHeight;
 
-                // NEW Linha 2: CPF
-                doc.moveTo(fieldBoxX, yRowR + rowHeight).lineTo(endX, yRowR + rowHeight).stroke(); // Horizontal line
-                doc.font('Helvetica-Bold').fontSize(8).text('CPF:', xR_1 + textPad, yRowR + textYPad);
-                labelWidth = doc.widthOfString('CPF:');
-                doc.font('Helvetica').fontSize(8).text(data.repCpf || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
-                yRowR += rowHeight;
+                // NEW Linha 2: CPF
+                doc.moveTo(fieldBoxX, yRowR + rowHeight).lineTo(endX, yRowR + rowHeight).stroke(); // Horizontal line
+                doc.font('Helvetica-Bold').fontSize(8).text('CPF:', xR_1 + textPad, yRowR + textYPad);
+                labelWidth = doc.widthOfString('CPF:');
+                doc.font('Helvetica').fontSize(8).text(data.repCpf || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
+                yRowR += rowHeight;
 
-                // NEW Linha 3: Cargo
-                // No horizontal line needed at the bottom of the last cell
-                doc.font('Helvetica-Bold').fontSize(8).text('Cargo:', xR_1 + textPad, yRowR + textYPad);
-                labelWidth = doc.widthOfString('Cargo:');
-                doc.font('Helvetica').fontSize(8).text(data.repCargo || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
-                yRowR += rowHeight;
-                
-                y = yRowR; // Define o y final
-            
-            // ==================================================
-            // <<< FIM DO NOVO FLUXO PJ >>>
-            // ==================================================
+                // NEW Linha 3: Cargo
+                // No horizontal line needed at the bottom of the last cell
+                doc.font('Helvetica-Bold').fontSize(8).text('Cargo:', xR_1 + textPad, yRowR + textYPad);
+                labelWidth = doc.widthOfString('Cargo:');
+                doc.font('Helvetica').fontSize(8).text(data.repCargo || '', xR_1 + textPad + labelWidth + textPad, yRowR + textYPad);
+                yRowR += rowHeight;
+                
+                y = yRowR; // Define o y final
+            
+            // ==================================================
+            // <<< FIM DO NOVO FLUXO PJ >>>
+            // ==================================================
 
-            } else {
-                
-            // ==================================================
-            // <<< INÍCIO DO FLUXO ANTIGO (PF / SÓCIOS) >>>
-            // ==================================================
+            } else {
+                
+            // ==================================================
+            // <<< INÍCIO DO FLUXO ANTIGO (PF / SÓCIOS) >>>
+            // ==================================================
                 const numSocios = parseInt(data.numSocios, 10) || 1;
 
                 for (let i = 0; i < numSocios; i++) {
@@ -255,7 +255,7 @@ async function generatePdfPromise(data) {
                      doc.save().translate(MARGIN_LEFT + labelBoxWidth/2, yConj + hConj/2).rotate(-90).font('Helvetica-Bold').fontSize(9).text('CÔNJUGE', -hConj / 2, -4, { width: hConj, align: 'center' }).restore();
 
                      const xConj_1 = fieldBoxX;
-                     const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2; // <<< MUDANÇA: 50% split
+                     const xConj_2 = fieldBoxX + (CONTENT_WIDTH - labelBoxWidth) / 2; // 50% split
                      let yRowConj = yConj;
 
                      // Linha 1 Cônjuge: Nome / CPF (ALTERADO)
@@ -271,22 +271,25 @@ async function generatePdfPromise(data) {
 
                      // Linha 2 Cônjuge: Profissão
                      doc.moveTo(fieldBoxX, yRowConj + rowHeight).lineTo(endX, yRowConj + rowHeight).stroke(); // H
+                        
+                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
                      doc.font('Helvetica-Bold').fontSize(8).text('Profissão:', xConj_1 + textPad, yRowConj + textYPad);
                      labelWidth = doc.widthOfString('Profissão:');
-                     doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xC_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                     doc.font('Helvetica').fontSize(8).text(data.conjugeProfissao || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
                      yRowConj += rowHeight;
                      
                      // Linha 3 Cônjuge: Email
+                        // <<< CORREÇÃO DO BUG AQUI (ERA xC_1) >>>
                      doc.font('Helvetica-Bold').fontSize(8).text('Email:', xConj_1 + textPad, yRowConj + textYPad);
                      labelWidth = doc.widthOfString('Email:');
-                     doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xC_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
+                     doc.font('Helvetica').fontSize(8).text(data.conjugeEmail || '', xConj_1 + textPad + labelWidth + textPad, yRowConj + textYPad);
 
                      y = yConj + hConj; // Usa a altura total
                  }
-            // ==================================================
-            // <<< FIM DO FLUXO ANTIGO (PF / SÓCIOS) >>>
-            // ==================================================
-            }
+            // ==================================================
+            // <<< FIM DO FLUXO ANTIGO (PF / SÓCIOS) >>>
+            // ==================================================
+            }
 
 
             y += 15;
@@ -390,11 +393,11 @@ async function generatePdfPromise(data) {
             doc.x = MARGIN_LEFT;
             doc.font('Helvetica').fontSize(8);
             
-            // Texto do Preâmbulo
-            const preambuloTexto1 = (authType === 'pj')
-                ? 'A Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no '
-                : 'O(s) Contratante(s) autoriza(m) a Beehouse Investimentos Imobiliários, inscrita no ';
-                
+            // Texto do Preâmbulo
+            const preambuloTexto1 = (authType === 'pj')
+                ? 'A Contratante autoriza a Beehouse Investimentos Imobiliários, inscrita no '
+                : 'O(s) Contratante(s) autoriza(m) a Beehouse Investimentos Imobiliários, inscrita no ';
+                
             doc.text(preambuloTexto1, {
                 continued: true,
                 align: 'justify', 
@@ -422,19 +425,19 @@ async function generatePdfPromise(data) {
             // Cláusulas
             const clausulaIndent = 10;
             const clausulaWidth = CONTENT_WIDTH - clausulaIndent;
-            const clausulaNumWidth = 20; // Largura para o '1º'
-            const clausulaTextWidth = clausulaWidth - clausulaNumWidth;
-            const clausulaNumX = MARGIN_LEFT;
-            const clausulaTextX = MARGIN_LEFT + clausulaNumWidth;
+            const clausulaNumWidth = 20; // Largura para o '1º'
+            const clausulaTextWidth = clausulaWidth - clausulaNumWidth;
+            const clausulaNumX = MARGIN_LEFT;
+            const clausulaTextX = MARGIN_LEFT + clausulaNumWidth;
 
-            const comissaoTexto = (authType === 'pj')
-                ? 'A Contratante pagará a Contratada, uma vez concluído o negócio a comissão de'
-                : 'O(s) Contratante(s) pagará(ão) a Contratada, uma vez concluído o negócio a comissão de';
-            
-            // <<< MUDANÇA: Removido RG do texto da PF >>>
-            const declaracaoTexto = (authType === 'pj')
-                ? 'A Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, Contrato Social e carne de IPTU.'
-                : 'O(s) Contratante(s) declara(m) que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF e carne de IPTU.';
+            const comissaoTexto = (authType === 'pj')
+                ? 'A Contratante pagará a Contratada, uma vez concluído o negócio a comissão de'
+                : 'O(s) Contratante(s) pagará(ão) a Contratada, uma vez concluído o negócio a comissão de';
+            
+            // <<< MUDANÇA: Removido RG do texto da PF >>>
+            const declaracaoTexto = (authType === 'pj')
+                ? 'A Contratante declara que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, Contrato Social e carne de IPTU.'
+                : 'O(s) Contratante(s) declara(m) que o imóvel encontra-se livre e desembaraçado, inexistindo quaisquer impedimento judicial e/ou extra judicial que impeça a transferencia de posse, comprometendo-se a fornecer cópia do Registro de Imóveis, CPF e carne de IPTU.';
             
             doc.font('Helvetica-Bold').text('1º', clausulaNumX, doc.y, { width: clausulaNumWidth });
             doc.font('Helvetica').text(`A venda é concebida a contar desta data pelo prazo e forma acima definidos. Após esse período o contrato se encerra.`, clausulaTextX, doc.y - doc.heightOfString('1º'), { align: 'justify', width: clausulaTextWidth});
@@ -496,7 +499,7 @@ async function generatePdfPromise(data) {
                     return doc.y + 60; 
                 }
                 // Retorna o Y proposto, pois cabe
-                return proposedY; 
+                return proposedY; 
             };
 
             // --- LÓGICA DE DESENHO REFEITA ---
@@ -515,14 +518,14 @@ async function generatePdfPromise(data) {
                 currentY
             );
 
-            // ==========================================
-            // <<< LÓGICA DE ASSINATURA ATUALIZADA >>>
-            // ==========================================
-            if (authType === 'pj') {
-                // *** CORREÇÃO AQUI: Um bloco só ***
-                const repNome = data.repNome || 'Nome Rep. Legal';
-                const repCpf = data.repCpf || 'CPF Rep. Legal';
-                
+            // ==========================================
+            // <<< LÓGICA DE ASSINATURA ATUALIZADA >>>
+            // ==========================================
+            if (authType === 'pj') {
+                // *** CORREÇÃO AQUI: Um bloco só ***
+                const repNome = data.repNome || 'Nome Rep. Legal';
+                const repCpf = data.repCpf || 'CPF Rep. Legal';
+                
                 drawSignature(
                     'CONTRATANTE', 
                     data.empresaRazaoSocial || 'RAZÃO SOCIAL', 
@@ -530,7 +533,7 @@ async function generatePdfPromise(data) {
                     col2_X, 
                     currentY
           	     );
-            
+            
             } else if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
                 drawSignature(
@@ -555,7 +558,7 @@ async function generatePdfPromise(data) {
 
             } else if (authType === 'socios') {
                 const numSocios = parseInt(data.numSocios, 10) || 1;
-                // Sócio 1 (Coluna 2, Linha 1)
+                // Sócio 1 (Coluna 2, Linha 1)
                 drawSignature(
                     'CONTRATANTE',
                     data.socio1Nome || 'CONTRATANTE', 
@@ -590,14 +593,14 @@ async function generatePdfPromise(data) {
             	 	 	 data.contratanteNome || 'NOME CONTRATANTE', 
           	 	 	 `CPF: ${data.contratanteCpf}` || 'CPF', 
             	 	 	 col2_X, 
-            	 	 	 currentY
+         	 	 	     currentY
           	 	 );
         	   }
-            // ==========================================
-            // <<< FIM DA LÓGICA DE ASSINATURA >>>
-            // ==========================================
+            // ==========================================
+            // <<< FIM DA LÓGICA DE ASSINATURA >>>
+            // ==========================================
 
-            // --- FIM DA LÓGICA DE DESENHO ---
+            // --- FIM DA LÓGICA DE DESENHO ---
 
             doc.end();
 
@@ -620,14 +623,14 @@ export default async function handler(req, res) {
     try {
         const data = req.body;
         console.log('Iniciando geração do PDF com dados:', data);
-        
-        // Define o nome do arquivo com base no tipo
-        let fileName = 'Autorizacao_Venda_Contratante.pdf';
-        if (data.authType === 'pj') {
-            fileName = `Autorizacao_Venda_${data.empresaRazaoSocial || 'PJ'}.pdf`;
-        } else {
-            fileName = `Autorizacao_Venda_${data.contratanteNome || data.socio1Nome || 'Contratante'}.pdf`;
-        }
+        
+        // Define o nome do arquivo com base no tipo
+        let fileName = 'Autorizacao_Venda_Contratante.pdf';
+        if (data.authType === 'pj') {
+            fileName = `Autorizacao_Venda_${data.empresaRazaoSocial || 'PJ'}.pdf`;
+        } else {
+            fileName = `Autorizacao_Venda_${data.contratanteNome || data.socio1Nome || 'Contratante'}.pdf`;
+        }
 
         const pdfBuffer = await generatePdfPromise(data);
 

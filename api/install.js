@@ -169,29 +169,29 @@ async function handlePostSelection(req, res) {
         if (!authTokens) return res.status(401).send('Erro: Falha na autenticação.');
 
         let contratanteData = { nome: '', cpf: '', telefone: '', email: '' }; // Para PF
-        let pjData = { razaoSocial: '', cnpj: '', telefone: '', email: '', endereco: '' }; // Para PJ
+        let pjData = { razaoSocial: '', cnpj: '', telefone: '', email: '', endereco: '' }; // Para PJ
 
         if (companyId && authType !== 'socios_qtd') {
             try {
                  const company = await call('crm.company.get', { id: companyId }, authTokens);
                  if (company) {
-                    // Mapeamento para Pessoa Física
+                    // Mapeamento para Pessoa Física
                      contratanteData = {
                          nome: company.TITLE || '', // Assume que TITLE é o nome da PF (se for usado para PF)
                          telefone: (company.PHONE?.[0]?.VALUE) || '',
                          email: (company.EMAIL?.[0]?.VALUE) || '',
                          cpf: company.UF_CRM_66C37392C9F3D || '' // Assume que este é o CPF
                      };
-                    
-                    // Mapeamento para Pessoa Jurídica
-                    pjData = {
+                    
+                    // Mapeamento para Pessoa Jurídica
+                    pjData = {
                          razaoSocial: company.TITLE || '', // TITLE é a Razão Social
                          telefone: (company.PHONE?.[0]?.VALUE) || '',
                          email: (company.EMAIL?.[0]?.VALUE) || '',
                          cnpj: company.UF_CRM_66C37392C9F3D || '', // Assume que este é o CNPJ
-                        // NOTA: Endereço não é pego aqui, mas poderia ser mapeado se você tiver os campos
+                        // NOTA: Endereço não é pego aqui, mas poderia ser mapeado se você tiver os campos
                          endereco: '' 
-                    };
+                    };
                  }
             } catch(e){ console.error("[Handler PostSelection] Erro buscar empresa:", e.message); }
         }
@@ -199,7 +199,7 @@ async function handlePostSelection(req, res) {
         res.setHeader('Content-Type', 'text/html');
         if (authType === 'solteiro' || authType === 'casado') {
             res.send(getFormHtml(authType, contratanteData));
-        } else if (authType === 'pj') { // <<< NOVO FLUXO PJ
+        } else if (authType === 'pj') { // <<< NOVO FLUXO PJ
             res.send(getFormHtmlPJ(pjData));
         } else if (authType === 'socios_qtd') {
              res.send(getSociosQtdHtml(companyId, authTokens.member_id));
@@ -224,10 +224,10 @@ async function handlePostSelection(req, res) {
 function getSelectionHtml(companyId, memberId) {
     const buildUrl = (type) => `/api/install?type=${type}${companyId ? '&companyId=' + companyId : ''}${memberId ? '&member_id=' + memberId : ''}`;
     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Selecionar Tipo</title><style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9;display:flex;justify-content:center;align-items:center;min-height:90vh}.container{background:#fff;padding:30px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05);text-align:center;max-width:400px;width:100%}h2{color:#333;margin-top:0;margin-bottom:25px;font-size:1.3em}a{display:block;background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;text-decoration:none;margin-bottom:15px;font-weight:700;transition:background-color .2s}a:hover{background-color:#0056b3}a.secondary{background-color:#6c757d}a.secondary:hover{background-color:#5a6268}
-    a.tertiary{background-color:#28a745}a.tertiary:hover{background-color:#218838}
-    </style></head><body><div class="container"><h2>Selecione o Tipo de Autorização de Venda</h2><a href="${buildUrl('solteiro')}">Pessoa Física (Solteiro/Viúvo)</a><a href="${buildUrl('casado')}">Pessoa Física (Casado/União)</a><a href="${buildUrl('socios_qtd')}" class="secondary">Pessoa Física (Vários Sócios)</a>
-    <a href="${buildUrl('pj')}" class="tertiary">Pessoa Jurídica (Empresa)</a>
-    </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,450),BX.setTitle("Selecionar Tipo")})</script></body></html>`;
+    a.tertiary{background-color:#28a745}a.tertiary:hover{background-color:#218838}
+    </style></head><body><div class="container"><h2>Selecione o Tipo de Autorização de Venda</h2><a href="${buildUrl('solteiro')}">Pessoa Física (Solteiro/Viúvo)</a><a href="${buildUrl('casado')}">Pessoa Física (Casado/União)</a><a href="${buildUrl('socios_qtd')}" class="secondary">Pessoa Física (Vários Sócios)</a>
+    <a href="${buildUrl('pj')}" class="tertiary">Pessoa Jurídica (Empresa)</a>
+    </div><script src="//api.bitrix24.com/api/v1/"></script><script>window.BX&&BX.ready(function(){BX.resizeWindow(600,450),BX.setTitle("Selecionar Tipo")})</script></body></html>`;
 }
 
 // HTML para perguntar a quantidade de sócios (COM BOTÃO VOLTAR)
@@ -278,7 +278,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
         const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
 
         // ==================================================
-        // ALTERAÇÃO: Removido DIV do RG
+        // <<< LAYOUT CORRIGIDO AQUI >>>
         // ==================================================
         contratanteHtml += `
             <div class="form-section">
@@ -302,22 +302,21 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
              <div class="form-grid">
                  <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
                  <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
-                 <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
-                 <div class="grid-col-span-2"></div>
+                 <div class="grid-col-span-3"><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
              </div>
         </div>` : '';
-    
-    // CSS Padrão (será usado por ambos os formulários)
+    
+    // CSS Padrão (será usado por ambos os formulários)
     const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
     /* --- ADICIONADO CSS --- */
     .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
     @media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}`;
 
-    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
-    const imovelEContratoHtml = `
-        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
-    `;
+    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
+    const imovelEContratoHtml = `
+        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
+    `;
 
     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>${formCss}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="${type}">${numSocios>1?`<input type="hidden" name="numSocios" value="${numSocios}">`:""}${contratanteHtml}${conjugeHtml}${imovelEContratoHtml}
     
@@ -334,39 +333,39 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
 // <<< NOVA FUNÇÃO: HTML PARA PESSOA JURÍDICA >>>
 // ==================================================================
 function getFormHtmlPJ(pjData) {
-    // CSS Padrão (o mesmo do getFormHtml)
+    // CSS Padrão (o mesmo do getFormHtml)
     const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}.grid-col-span-2{grid-column:span 2}.grid-col-span-3{grid-column:1 / -1}button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
     /* --- ADICIONADO CSS --- */
     .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
     @media (max-width:600px){.form-grid{grid-template-columns:1fr}.grid-col-span-2{grid-column:span 1}}`;
 
-    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
-    const imovelEContratoHtml = `
-        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
-    `;
+    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
+    const imovelEContratoHtml = `
+        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
+    `;
 
-    // Bloco HTML Específico para PJ (COM RG REMOVIDO)
-    const pjHtml = `
-        <div class="form-section">
-            <h3 class="pj">EMPRESA (CONTRATANTE)</h3>
-            <div class="form-grid">
-                <div class="grid-col-span-3"><label>Razão Social:</label><input type="text" name="empresaRazaoSocial" value="${pjData.razaoSocial}"></div>
-                <div><label>CNPJ:</label><input type="text" name="empresaCnpj" value="${pjData.cnpj}"></div>
-                <div class="grid-col-span-2"><label>Inscrição Estadual/Municipal:</label><input type="text" name="empresaIe" placeholder="(Opcional)"></div>
-                <div class="grid-col-span-3"><label>Endereço da Sede:</label><input type="text" name="empresaEndereco" value="${pjData.endereco}" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
-                <div><label>Telefone/Celular:</label><input type="text" name="empresaTelefone" value="${pjData.telefone}"></div>
-                <div class="grid-col-span-2"><label>E-mail:</label><input type="email" name="empresaEmail" value="${pjData.email}"></div>
-            </div>
-        </div>
-        <div class="form-section">
-            <h3 class="pj">REPRESENTANTE LEGAL</h3>
-            <div class="form-grid">
-                <div><label>Nome Completo:</label><input type="text" name="repNome"></div>
-                <div><label>CPF:</label><input type="text" name="repCpf"></div>
-                <div><label>Cargo:</label><input type="text" name="repCargo" placeholder="Ex: Sócio-Administrador"></div>
-            </div>
-        </div>
-    `;
+    // Bloco HTML Específico para PJ (COM RG REMOVIDO)
+    const pjHtml = `
+        <div class="form-section">
+            <h3 class="pj">EMPRESA (CONTRATANTE)</h3>
+            <div class="form-grid">
+                <div class="grid-col-span-3"><label>Razão Social:</label><input type="text" name="empresaRazaoSocial" value="${pjData.razaoSocial}"></div>
+                <div><label>CNPJ:</label><input type="text" name="empresaCnpj" value="${pjData.cnpj}"></div>
+                <div class="grid-col-span-2"><label>Inscrição Estadual/Municipal:</label><input type="text" name="empresaIe" placeholder="(Opcional)"></div>
+                <div class="grid-col-span-3"><label>Endereço da Sede:</label><input type="text" name="empresaEndereco" value="${pjData.endereco}" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
+                <div><label>Telefone/Celular:</label><input type="text" name="empresaTelefone" value="${pjData.telefone}"></div>
+                <div class="grid-col-span-2"><label>E-mail:</label><input type="email" name="empresaEmail" value="${pjData.email}"></div>
+            </div>
+        </div>
+        <div class="form-section">
+            <h3 class="pj">REPRESENTANTE LEGAL</h3>
+            <div class="form-grid">
+                <div><label>Nome Completo:</label><input type="text" name="repNome"></div>
+                <div><label>CPF:</label><input type="text" name="repCpf"></div>
+                <div><label>Cargo:</label><input type="text" name="repCargo" placeholder="Ex: Sócio-Administrador"></div>
+            </div>
+        </div>
+    `;
 
 
     return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>${formCss}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda (PJ)</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="pj">${pjHtml}${imovelEContratoHtml}
@@ -382,6 +381,9 @@ function getFormHtmlPJ(pjData) {
 
 // ==================================================================
 // Função auxiliar para registrar/atualizar o placement (Botão)
+// ==================================================================
+// ESTA É A VERSÃO ANTIGA. Se você está usando os apps de LMS e Chat,
+// use a versão da minha resposta anterior, que registra TUDO.
 // ==================================================================
 async function registerPlacement(handlerUrl, tokens) {
     if (!tokens || !tokens.access_token) {
