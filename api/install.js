@@ -285,6 +285,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
             </div>`;
     }
 
+    // <<< LAYOUT CORRIGIDO AQUI (2 COLUNAS) >>>
     const conjugeHtml = type === 'casado' ? `
         <div class="form-section">
             <h3>CÔNJUGE</h3>
@@ -412,9 +413,6 @@ function getFormHtmlPJ(pjData) {
 
 // ==================================================================
 // <<< FUNÇÃO DE REGISTRO COMPLETA (COLE ESSA) >>>
-// =Optei por incluir a função de registro completa que abrange
-// todos os aplicativos que discutimos (PDF, Busca, LMS, Chat)
-// para evitar futuros erros de instalação.
 // ==================================================================
 async function registerPlacement(appHost, tokens) { // Recebe appHost (ex: req.headers.host)
     if (!tokens || !tokens.access_token) {

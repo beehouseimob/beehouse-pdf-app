@@ -531,7 +531,7 @@ async function generatePdfPromise(data) {
                     `p.p. ${repNome} - CPF: ${repCpf}`, // p.p. = "por procuração" / "em nome de"
                     col2_X, 
                     currentY
-                 );
+          	     );
             
             } else if (authType === 'casado') {
                 // Contratante (Coluna 2, Linha 1)
@@ -547,13 +547,13 @@ async function generatePdfPromise(data) {
                 currentY = checkAndSetY(nextY);
 
                 // Cônjuge (Coluna 2, Linha 2)
-                 drawSignature(
-                         'CÔNJUGE', 
+          	     drawSignature(
+            	     	 'CÔNJUGE', 
                     data.conjugeNome || 'NOME CÔNJUGE', 
                     `CPF: ${data.conjugeCpf}` || 'CPF', 
                     col2_X, 
-                     currentY
-                 );
+          	     	 currentY
+          	     );
 
             } else if (authType === 'socios') {
                 const numSocios = parseInt(data.numSocios, 10) || 1;
@@ -561,40 +561,40 @@ async function generatePdfPromise(data) {
                 drawSignature(
                     'CONTRATANTE',
                     data.socio1Nome || 'CONTRATANTE', 
-                     `CPF: ${data.socio1Cpf}` || 'CPF', 
-                     col2_X,
+          	     	 `CPF: ${data.socio1Cpf}` || 'CPF', 
+          	 	     col2_X,
                     currentY
-                 );
+          	     );
                 
-                 let socioIndex = 1; 
+          	     let socioIndex = 1; 
                 
-                   while (socioIndex < numSocios) {
-                         let nextY = currentY + sigBlockHeight + sigYMargin;
-                D          // Checa se a *próxima* linha cabe
-                         currentY = checkAndSetY(nextY);
+          	 	   while (socioIndex < numSocios) {
+            	     	 let nextY = currentY + sigBlockHeight + sigYMargin;
+            	     	 // Checa se a *próxima* linha cabe
+            	     	 currentY = checkAndSetY(nextY);
                     
-                         const prefix = `socio${socioIndex + 1}`;
+          	 	     	 const prefix = `socio${socioIndex + 1}`;
                     
-                   ndex       drawSignature(
-                             `CONTRATANTE ${socioIndex + 1}`, 
-                         data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
-                         `CPF: ${data[`${prefix}Cpf`]}` || 'CPF', 
-in                          col2_X, 
-                         currentY
+          	 	     	 drawSignature(
+M           	 	     	 `CONTRATANTE ${socioIndex + 1}`, 
+              	     	 data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
+          	 	     	 `CPF: ${data[`${prefix}Cpf`]}` || 'CPF', 
+              	     	 col2_X, 
+          	 	     	 currentY
                     );
-                     socioIndex++;
-section             }
+          	 	     socioIndex++;
+          	 	   }
 
-             } else { // Solteiro / Viúvo (authType === 'solteiro')
-                 // Contratante (Coluna 2, Linha 1)
-                 drawSignature(
-                         'CONTRATANTE', 
-A                       data.contratanteNome || 'NOME CONTRATANTE', 
-                     `CPF: ${data.contratanteCpf}` || 'CPF', 
-                         col2_X, 
-                         currentY
-                 );
-               }
+          	 } else { // Solteiro / Viúvo (authType === 'solteiro')
+          	 	 // Contratante (Coluna 2, Linha 1)
+          	 	 drawSignature(
+            	 	 	 'CONTRATANTE', 
+            	 	 	 data.contratanteNome || 'NOME CONTRATANTE', 
+          	 	 	 `CPF: ${data.contratanteCpf}` || 'CPF', 
+            	 	 	 col2_X, 
+            	 	 	 currentY
+          	 	 );
+        	   }
             // ==========================================
             // <<< FIM DA LÓGICA DE ASSINATURA >>>
             // ==========================================
@@ -622,7 +622,7 @@ export default async function handler(req, res) {
     try {
         const data = req.body;
         console.log('Iniciando geração do PDF com dados:', data);
-A       
+        
         // Define o nome do arquivo com base no tipo
         let fileName = 'Autorizacao_Venda_Contratante.pdf';
         if (data.authType === 'pj') {
@@ -636,7 +636,7 @@ A      
         console.log('PDF pronto. Enviando resposta...');
 
         res.setHeader('Content-Type', 'application/pdf');
-A       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
         res.end(pdfBuffer);
 
