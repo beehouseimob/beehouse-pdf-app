@@ -73,7 +73,6 @@ async function handleLocalInstall(req, res, params) {
         if (!tokens.member_id) throw new Error('member_id ausente.');
 
         await saveTokens(tokens);
-        // Passa o req.headers.host para a função de registro
         await registerPlacement(req.headers.host, tokens);
 
         res.setHeader('Content-Type', 'text/html');
@@ -109,7 +108,6 @@ async function handleOAuthInstall(req, res, params) {
          if (!tokens.access_token || !tokens.refresh_token || !tokens.domain || !tokens.member_id) throw new Error('Dados de token inválidos.');
 
          await saveTokens(tokens);
-         // Passa o req.headers.host para a função de registro
          await registerPlacement(req.headers.host, tokens);
 
          res.setHeader('Content-Type', 'text/html');
@@ -277,7 +275,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
                     <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
                     <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
                     <div><label>Estado Civil:</label><select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')"><option value="">Selecione...</option>${estadoCivilOptions}</select></div>
-                    <div id="${prefix}RegimeDiv" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
+                    <div id="${prefix}RegimeDiv" class="grid-col-span-2" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
                     <div class="grid-col-span-2"><label>Endereço Residencial:</label><input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
                     <div><label>Telefone/Celular:</label><input type="text" name="${prefix}Telefone" value="${telefone}"></div>
                     <div><label>E-mail:</label><input type="email" name="${prefix}Email" value="${email}"></div>
@@ -289,7 +287,7 @@ function getFormHtml(type, contratanteData, numSocios = 1) {
     const conjugeHtml = type === 'casado' ? `
         <div class="form-section">
             <h3>CÔNJUGE</h3>
-                <div class="form-grid-2-col">
+             <div class="form-grid-2-col">
                  <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
                  <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
                  <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>

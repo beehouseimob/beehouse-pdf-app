@@ -576,7 +576,7 @@ async function generatePdfPromise(data) {
           	 	     	 const prefix = `socio${socioIndex + 1}`;
                     
           	 	     	 drawSignature(
-M           	 	     	 `CONTRATANTE ${socioIndex + 1}`, 
+            	 	     	 `CONTRATANTE ${socioIndex + 1}`, 
               	     	 data[`${prefix}Nome`] || `NOME SÓCIO ${socioIndex + 1}`, 
           	 	     	 `CPF: ${data[`${prefix}Cpf`]}` || 'CPF', 
               	     	 col2_X, 
