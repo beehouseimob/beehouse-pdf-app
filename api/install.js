@@ -248,93 +248,104 @@ function getSociosQtdHtml(companyId, memberId) {
 
 
 // HTML principal do formulário (COM BOTÃO VOLTAR)
+// ==================================================================
+// HTML principal do formulário (CORRIGIDO - PESSOA FÍSICA)
+// ==================================================================
 function getFormHtml(type, contratanteData, numSocios = 1) {
-    let contratanteHtml = '';
+    let contratanteHtml = '';
 
-    const estadoCivilSolteiroOptions = `<option value="Solteiro(a)">Solteiro(a)</option><option value="Divorciado(a)">Divorciado(a)</option><option value="Viúvo(a)">Viúvo(a)</option>`;
-    const estadoCivilCasadoOptions = `<option value="Casado(a)">Casado(a)</option><option value="União Estável">União Estável</option>`;
-    const regimeCasamentoOptions = `<option value="Comunhão Parcial de Bens">Comunhão Parcial de Bens</option><option value="Comunhão Universal de Bens">Comunhão Universal de Bens</option><option value="Separação Total de Bens">Separação Total de Bens</option><option value="Participação Final nos Aquestos">Participação Final nos Aquestos</option><option value="Outro">Outro</option>`;
+    const estadoCivilSolteiroOptions = `<option value="Solteiro(a)">Solteiro(a)</option><option value="Divorciado(a)">Divorciado(a)</option><option value="Viúvo(a)">Viúvo(a)</option>`;
+    const estadoCivilCasadoOptions = `<option value="Casado(a)">Casado(a)</option><option value="União Estável">União Estável</option>`;
+    const regimeCasamentoOptions = `<option value="Comunhão Parcial de Bens">Comunhão Parcial de Bens</option><option value="Comunhão Universal de Bens">Comunhão Universal de Bens</option><option value="Separação Total de Bens">Separação Total de Bens</option><option value="Participação Final nos Aquestos">Participação Final nos Aquestos</option><option value="Outro">Outro</option>`;
 
-    for (let i = 0; i < numSocios; i++) {
-        const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
-        const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
-        const nome = (i === 0) ? contratanteData.nome : '';
-        const cpf = (i === 0) ? contratanteData.cpf : '';
-        const telefone = (i === 0) ? contratanteData.telefone : '';
-        const email = (i === 0) ? contratanteData.email : '';
-        const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
+    for (let i = 0; i < numSocios; i++) {
+        const prefix = numSocios > 1 ? `socio${i+1}` : 'contratante';
+        const titulo = numSocios > 1 ? `SÓCIO ${i+1}` : 'CONTRATANTE';
+        const nome = (i === 0) ? contratanteData.nome : '';
+        const cpf = (i === 0) ? contratanteData.cpf : '';
+        const telefone = (i === 0) ? contratanteData.telefone : '';
+        const email = (i === 0) ? contratanteData.email : '';
+        const estadoCivilOptions = (type === 'casado' && numSocios === 1) ? estadoCivilCasadoOptions : estadoCivilSolteiroOptions + estadoCivilCasadoOptions;
 
-        // ==================================================
-        // <<< LAYOUT CORRIGIDO AQUI (2 COLUNAS) >>>
-        // ==================================================
-        contratanteHtml += `
-            <div class="form-section">
-                <h3>${titulo}</h3>
-                <div class="form-grid-2-col">
-                    <div class="grid-col-span-2"><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
-                    <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
-                    <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
-                    <div><label>Estado Civil:</label><select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')"><option value="">Selecione...</option>${estadoCivilOptions}</select></div>
-                    <div id="${prefix}RegimeDiv" class="grid-col-span-2" style="display: none;"><label>Regime de Casamento:</label><select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select></div>
-                    <div class="grid-col-span-2"><label>Endereço Residencial:</label><input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
-                    <div><label>Telefone/Celular:</label><input type="text" name="${prefix}Telefone" value="${telefone}"></div>
-                    <div><label>E-mail:</label><input type="email" name="${prefix}Email" value="${email}"></div>
-                </div>
-            </div>`;
-    }
+        // ==================================================
+        // <<< LAYOUT CORRIGIDO (USANDO GRADE 3 COLUNAS) >>>
+        // ==================================================
+        contratanteHtml += `
+            <div class="form-section">
+                <h3>${titulo}</h3>
+                <div class="form-grid">
+                    
+                    <div class="grid-col-span-2"><label>Nome:</label><input type="text" name="${prefix}Nome" value="${nome}"></div>
+                    <div><label>CPF:</label><input type="text" name="${prefix}Cpf" value="${cpf}"></div>
+                    
+                    <div><label>Profissão:</label><input type="text" name="${prefix}Profissao"></div>
+                    <div>
+                        <label>Estado Civil:</label>
+                        <select name="${prefix}EstadoCivil" id="${prefix}EstadoCivil" onchange="toggleRegime('${prefix}')">
+                            <option value="">Selecione...</option>${estadoCivilOptions}
+                        </select>
+                    </div>
+                    <div><label>Telefone/Celular:</label><input type="text" name="${prefix}Telefone" value="${telefone}"></div>
+                    
+                    <div id="${prefix}RegimeDiv" class="grid-col-span-3" style="display: none;">
+                        <label>Regime de Casamento:</label>
+                        <select name="${prefix}RegimeCasamento"><option value="">Selecione...</option>${regimeCasamentoOptions}</select>
+                    </div>
 
-    // <<< LAYOUT CORRIGIDO AQUI (2 COLUNAS) >>>
-    const conjugeHtml = type === 'casado' ? `
-        <div class="form-section">
-            <h3>CÔNJUGE</h3>
-             <div class="form-grid-2-col">
-                 <div><label>Nome:</label><input type="text" name="conjugeNome"></div>
-                 <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
-                 <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
-                 <div><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
-             </div>
-        </div>` : '';
-    
-    // CSS Padrão (será usado por ambos os formulários)
-    // <<< CSS CORRIGIDO: Adicionado .form-grid-2-col >>>
-    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}
-    
-    /* Grade Padrão (3 colunas) */
-    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}
-    
-    /* <<< NOVA Grade de 2 Colunas para PF >>> */
-    .form-grid-2-col {display:grid;grid-template-columns:repeat(2, 1fr);gap:16px;align-items:start}
-    
-    div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}
-    
-    /* Spans para as duas grades */
-    .grid-col-span-2{grid-column:span 2}
-    .grid-col-span-3{grid-column:1 / -1}
-    
-    button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
-    .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
-    
-    @media (max-width:600px){
-      .form-grid{grid-template-columns:1fr}
-      .form-grid-2-col{grid-template-columns:1fr}
-      .grid-col-span-2{grid-column:span 1}
-      .grid-col-span-3{grid-column:span 1}
-    }`;
+                    <div class="grid-col-span-3"><label>Endereço Residencial:</label><input type="text" name="${prefix}Endereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div>
+                    
+                    <div class="grid-col-span-3"><label>E-mail:</label><input type="email" name="${prefix}Email" value="${email}"></div>
+                </div>
+            </div>`;
+    }
 
-    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
-    // <<< USA A GRADE DE 3 COLUNAS PADRÃO (.form-grid) >>>
-    const imovelEContratoHtml = `
-        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
-    `;
+    // <<< LAYOUT CORRIGIDO CÔNJUGE >>>
+    const conjugeHtml = type === 'casado' ? `
+        <div class="form-section">
+            <h3>CÔNJUGE</h3>
+             <div class="form-grid">
+                 <div class="grid-col-span-2"><label>Nome:</label><input type="text" name="conjugeNome"></div>
+                 <div><label>CPF:</label><input type="text" name="conjugeCpf"></div>
+                 
+                 <div><label>Profissão:</label><input type="text" name="conjugeProfissao"></div>
+                 <div class="grid-col-span-2"><label>Email:</label><input type="text" name="conjugeEmail" placeholder="Ex: email@example.com"></div>
+             </div>
+        </div>` : '';
+    
+    // CSS unificado (mantendo a consistência com o resto do sistema)
+    const formCss = `body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;margin:0;padding:24px;background-color:#f9f9f9}h2{color:#333;border-bottom:2px solid #eee;padding-bottom:10px}form{max-width:800px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}.form-section{margin-bottom:25px;border-bottom:1px solid #f0f0f0;padding-bottom:20px}.form-section:last-of-type{border-bottom:none}h3{color:#0056b3;margin-top:0;margin-bottom:15px;font-size:1.1em;border-left:3px solid #007bff;padding-left:8px}h3.pj{color:#218838;border-left:3px solid #28a745}
+    
+    /* Grade Padrão (3 colunas responsivas) */
+    .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:start}
+    
+    div{margin-bottom:0}label{display:block;margin-bottom:6px;font-weight:600;color:#555;font-size:13px}input[type=text],input[type=number],input[type=email],select{width:100%;padding:10px;border:1px solid #ccc;border-radius:5px;font-size:14px;box-sizing:border-box;height:38px}input:focus,select:focus{border-color:#007bff;outline:0;box-shadow:0 0 0 2px rgba(0,123,255,.25)}
+    
+    /* Spans auxiliares */
+    .grid-col-span-2{grid-column:span 2}
+    .grid-col-span-3{grid-column:1 / -1} /* Ocupa linha toda */
+    
+    button{background-color:#007bff;color:#fff;padding:12px 20px;border:none;border-radius:5px;cursor:pointer;font-size:16px;font-weight:700;transition:background-color .2s}button:hover{background-color:#0056b3}.button-container{text-align:center;margin-top:20px}
+    .back-link{display:block;margin-top:15px;color:#6c757d;text-decoration:none;font-size:14px}.back-link:hover{text-decoration:underline}
+    
+    @media (max-width:600px){
+      .form-grid{grid-template-columns:1fr}
+      .grid-col-span-2{grid-column:span 1}
+      .grid-col-span-3{grid-column:span 1}
+    }`;
 
-    return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>${formCss}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="${type}">${numSocios>1?`<input type="hidden" name="numSocios" value="${numSocios}">`:""}${contratanteHtml}${conjugeHtml}${imovelEContratoHtml}
-    
-    <div class="button-container">
-        <button type="submit">Gerar PDF</button>
-        <a href="javascript:history.back()" class="back-link">Voltar</a>
-    </div>
+    // Seções de Imóvel e Contrato (comuns a ambos os formulários)
+    const imovelEContratoHtml = `
+        <div class="form-section"><h3>IMÓVEL</h3><div class="form-grid"><div class="grid-col-span-3"><label>Imóvel (Descrição):</label><input type="text" name="imovelDescricao" placeholder="Ex: Apartamento 101, Edifício Sol"></div><div class="grid-col-span-3"><label>Endereço do Imóvel:</label><input type="text" name="imovelEndereco" placeholder="Rua, Nº, Bairro, Cidade - SC"></div><div class="grid-col-span-2"><label>Inscrição Imobiliária/Matrícula:</label><input type="text" name="imovelMatricula" placeholder="Nº da matrícula"></div><div><label>Valor do Imóvel (R$):</label><input type="number" name="imovelValor" step="0.01" placeholder="500000.00"></div><div class="grid-col-span-2"><label>Administradora de Condomínio:</label><input type="text" name="imovelAdminCondominio"></div><div><label>Valor Condomínio (R$):</label><input type="number" name="imovelValorCondominio" step="0.01" placeholder="350.00"></div><div><label>Chamada de Capital:</label><input type="text" name="imovelChamadaCapital" placeholder="Ex: R$ 100,00"></div><div class="grid-col-span-2"><label>Nº de parcelas (Chamada Capital):</label><input type="number" name="imovelNumParcelas"></div></div></div><div class="form-section"><h3>CONTRATO</h3><div class="form-grid"><div><label>Prazo de exclusividade (dias):</label><input type="number" name="contratoPrazo" value="90" required></div><div><label>Comissão (%):</label><input type="number" name="contratoComissaoPct" value="6" step="0.1" required></div></div></div>
+    `;
 
-    </form><script src="//api.bitrix24.com/api/v1/"></script><script>function toggleRegime(e){let t=document.getElementById(e+"EstadoCivil"),o=document.getElementById(e+"RegimeDiv");if(t&&o){let n=t.value;"Casado(a)"===n||"União Estável"===n?o.style.display="block":o.style.display="none";let l=o.querySelector("select");l&&(l.value="")}}document.addEventListener("DOMContentLoaded",function(){let e=${numSocios};for(let t=0;t<e;t++){let o=e>1?\`socio\${t+1}\`:"contratante";toggleRegime(o)}window.BX&&BX.ready(function(){BX.resizeWindow(window.innerWidth>850?850:window.innerWidth,700),BX.setTitle("Gerar Autorização")})});</script></body></html>`;
+    return `<!DOCTYPE html><html lang="pt-br"><head><meta charset="UTF-8"><title>Gerar Autorização</title><style>${formCss}</style></head><body><form action="/api/generate-pdf" method="POST" target="_blank"><h2>Gerar Autorização de Venda</h2><p>Confira os dados pré-preenchidos (eles são editáveis) e preencha os campos manuais.</p><input type="hidden" name="authType" value="${type}">${numSocios>1?`<input type="hidden" name="numSocios" value="${numSocios}">`:""}${contratanteHtml}${conjugeHtml}${imovelEContratoHtml}
+    
+    <div class="button-container">
+        <button type="submit">Gerar PDF</button>
+        <a href="javascript:history.back()" class="back-link">Voltar</a>
+    </div>
+
+    </form><script src="//api.bitrix24.com/api/v1/"></script><script>function toggleRegime(e){let t=document.getElementById(e+"EstadoCivil"),o=document.getElementById(e+"RegimeDiv");if(t&&o){let n=t.value;"Casado(a)"===n||"União Estável"===n?o.style.display="block":o.style.display="none";let l=o.querySelector("select");l&&(l.value="")}}document.addEventListener("DOMContentLoaded",function(){let e=${numSocios};for(let t=0;t<e;t++){let o=e>1?\`socio\${t+1}\`:"contratante";toggleRegime(o)}window.BX&&BX.ready(function(){BX.resizeWindow(window.innerWidth>850?850:window.innerWidth,700),BX.setTitle("Gerar Autorização")})});</script></body></html>`;
 }
 
 
