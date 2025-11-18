@@ -437,7 +437,7 @@ async function registerPlacement(appHost, tokens) {
     await call('placement.bind', {
         PLACEMENT: pdfButtonCode,
         HANDLER: pdfButtonHandler,
-        TITLE: 'Gerar Autorização PDF',
+        TITLE: 'Gerar Autorização PDF.',
         DESCRIPTION: 'Gera PDF de autorização de vendas'
     }, tokens);
 }
