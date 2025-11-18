@@ -449,6 +449,6 @@ export default async function handler(req, res) {
         res.end(pdfBuffer);
     } catch (error) {
         console.error('Erro Handler:', error);
-        res.status(500).send('Erro ao gerar PDF: ' + error.message);
+        res.status(500).send('Erro ao gerar PDF:: ' + error.message);
     }
 }
